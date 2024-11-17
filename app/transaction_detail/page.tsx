@@ -1,11 +1,9 @@
 'use client'
-import { Send, MessageCircle, ChevronLeft, ChevronRight, Download, X } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from "@/components/ui/button"
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { CheckCircle, Clock, Search, Facebook, Twitter, Instagram, Twitch, Youtube } from "lucide-react"
+import { Card, CardContent } from "@/components/ui/card"
+import { CheckCircle, Clock } from "lucide-react"
 import Image from 'next/image'
 
 export default function TransactionPage() {

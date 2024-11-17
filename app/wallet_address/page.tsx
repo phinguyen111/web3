@@ -2,7 +2,7 @@
 
 import React, { useCallback, useState, useEffect } from "react";
 import dynamic from "next/dynamic";
-import { ChevronDown, Search, Copy, Eye, Download, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { ChevronDown, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import {
   Background,
   Controls,
@@ -180,7 +180,7 @@ const forceSimulation = (nodes: Node[], edges: Edge[]) => {
         const dy = nodes[j].position.y - nodes[i].position.y;
         const distanceSq = dx * dx + dy * dy;
         if (distanceSq === 0) continue;
-        
+
         // Adjusted repulsion calculation (reduce strength of force for close nodes)
         const force = REPULSION / Math.sqrt(distanceSq);
         const forceX = force * dx / distanceSq;
@@ -201,7 +201,7 @@ const forceSimulation = (nodes: Node[], edges: Edge[]) => {
         const dx = target.position.x - source.position.x;
         const dy = target.position.y - source.position.y;
         const distance = Math.sqrt(dx * dx + dy * dy);
-        
+
         // Attraction with logarithmic decay (could experiment with different formulas)
         const force = ATTRACTION * Math.log(distance + 1);
         const forceX = force * dx / distance;
@@ -275,7 +275,7 @@ export default function TransactionExplorer() {
       fetchTransactionData(newAddress);
     }
   }, [searchParams]);
-  
+
   const fetchAddressInfo = async (address: string) => {
     setIsLoading(true);
     setError(null);
@@ -339,7 +339,7 @@ export default function TransactionExplorer() {
     const relatedTransactions = apiTransactions.filter(
       (tx) => (tx.from === edge.source && tx.to === edge.target) || (tx.from === edge.target && tx.to === edge.source)
     );
-  
+
     if (relatedTransactions.length > 0) {
       setSelectedEdge(relatedTransactions);
       setIsOpen(true);
@@ -395,7 +395,7 @@ export default function TransactionExplorer() {
   const handleExport = () => {
     if (selectedEdge && selectedEdge.length > 0) {
       const headers = ['Time (UTC)', 'Hash', 'From', 'To', 'Amount', 'Fee'];
-      
+
       const rows = selectedEdge.map((transaction) => [
         transaction.timestamp ? new Date(transaction.timestamp * 1000).toLocaleString() : 'N/A',
         transaction.hash ? transaction.hash : 'No data',
@@ -429,7 +429,7 @@ export default function TransactionExplorer() {
     let filteredTransactions = apiTransactions;
 
     if (filterType !== "all") {
-      filteredTransactions = filteredTransactions.filter(tx => 
+      filteredTransactions = filteredTransactions.filter(tx =>
         filterType === "in" ? tx.to === currentAddress : tx.from === currentAddress
       );
     }
@@ -492,13 +492,13 @@ export default function TransactionExplorer() {
 
   return (
     <>
-          {/* Header section with wallet address information */}
-          <div className="bg-primaryGray p-4 sm:p-6 text-white sm:px-8 lg:px-20 font-exo2">
+      {/* Header section with wallet address information */}
+      <div className="bg-primaryGray p-4 sm:p-6 text-white sm:px-8 lg:px-20 font-exo2">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-2 sm:space-y-0">
           <h1 className="text-xl sm:text-2xl font-semibold font-quantico">Address Information</h1>
           <div className="flex items-center font-exo2">
             <p className="text-xs sm:text-sm font-light mr-4">
-            Gas: <span className="font-bold">{addressInfo.gas} Gwei</span>
+              Gas: <span className="font-bold">{addressInfo.gas} Gwei</span>
             </p>
           </div>
         </div>
@@ -574,9 +574,8 @@ export default function TransactionExplorer() {
                       : "No tokens found"}
                   </span>
                   <ChevronDown
-                    className={`h-4 w-4 transition-transform duration-200 ${
-                      isTokenHoldingsExpanded ? "rotate-180" : ""
-                    }`}
+                    className={`h-4 w-4 transition-transform duration-200 ${isTokenHoldingsExpanded ? "rotate-180" : ""
+                      }`}
                   />
                 </Button>
 
@@ -611,29 +610,29 @@ export default function TransactionExplorer() {
                     Private name tag:
                   </span>
                   <span className="bg-[#F5B056] text-gray-800 px-3 py-1 rounded-md">
-                  {addressInfo.privateNameTag || "N/A"}
+                    {addressInfo.privateNameTag || "N/A"}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600 font-bold">First seen:</span>
                   <span>{addressInfo.firstSeen || "N/A"}</span>
-                  </div>
+                </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600 font-bold">Last seen:</span>
                   <span>{addressInfo.lastSeen || "N/A"}</span>
-                  </div>
-                  <div>
-      <p className="text-gray-600 mb-1 font-bold">Funded by:</p>
-      <a href="#" className="text-blue-500 hover:underline">
-        {addressInfo.fundedBy || "N/A"}
-      </a>
-    </div>
+                </div>
+                <div>
+                  <p className="text-gray-600 mb-1 font-bold">Funded by:</p>
+                  <a href="#" className="text-blue-500 hover:underline">
+                    {addressInfo.fundedBy || "N/A"}
+                  </a>
+                </div>
                 <div>
                   <p className="text-gray-600 mb-1 font-bold">
                     Multichain info:
                   </p>
                   <span className="bg-[#F5B056] text-gray-800 px-3 py-1 rounded-md inline-block">
-                  {addressInfo.multichainInfo || "N/A"}
+                    {addressInfo.multichainInfo || "N/A"}
                   </span>
                 </div>
               </div>
@@ -641,34 +640,32 @@ export default function TransactionExplorer() {
           </div>
         </main>
       </div>
-      
-      
+
+
       {/* Transaction graph and history buttons */}
       <div className="flex justify-between items-center w-full bg-[#1a2b4b] p-4 border-b border-blue-700">
         <div className="flex space-x-2">
-          <Button 
+          <Button
             onClick={() => setActiveView("transaction")}
-            className={`font-bold py-2 px-4 rounded-t-lg transition duration-200 ease-in-out ${
-              activeView === "transaction" 
-                ? "bg-white text-[#1a2b4b]" 
+            className={`font-bold py-2 px-4 rounded-t-lg transition duration-200 ease-in-out ${activeView === "transaction"
+                ? "bg-white text-[#1a2b4b]"
                 : "bg-transparent text-white hover:bg-blue-600"
-            }`}
+              }`}
           >
             Transaction history
           </Button>
-          <Button 
+          <Button
             onClick={() => setActiveView("graph")}
-            className={`font-bold py-2 px-4 rounded-t-lg transition duration-200 ease-in-out ${
-              activeView === "graph" 
-                ? "bg-white text-[#1a2b4b]" 
+            className={`font-bold py-2 px-4 rounded-t-lg transition duration-200 ease-in-out ${activeView === "graph"
+                ? "bg-white text-[#1a2b4b]"
                 : "bg-transparent text-white hover:bg-blue-600"
-            }`}
+              }`}
           >
             Transaction Graph
           </Button>
         </div>
       </div>
- 
+
       {/* Main content area with transaction graph and table */}
       <div className="w-full h-full flex flex-col relative z-10 font-exo2 mb-8">
         {isLoading && (
@@ -683,7 +680,7 @@ export default function TransactionExplorer() {
             <span className="block sm:inline"> {error}</span>
           </div>
         )}
-        
+
         <div className="flex bg-[#1C2128] px-2 py-4 border-b border-b-white">
           {/* Add header content if needed */}
         </div>
@@ -691,7 +688,7 @@ export default function TransactionExplorer() {
           {activeView === "transaction" ? (
             <HistoryTable />
           ) : (
-          <div className="flex-grow flex">
+            <div className="flex-grow flex">
               {activeView === "graph" && (
                 <div className="w-full h-[600px] border border-gray-300">
                   <ReactFlow
