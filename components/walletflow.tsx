@@ -12,8 +12,8 @@ import {
     Title,
     Tooltip,
     Legend,
-    ChartOptions,
-    Filler
+    Filler,
+    ChartOptions // Ensure this import is added
 } from 'chart.js'
 import { Line } from 'react-chartjs-2'
 
@@ -37,155 +37,121 @@ type WalletFlowData = {
     currentBalance: number
 }
 
+const options: ChartOptions<'line'> = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+        legend: {
+            position: 'top',
+            labels: {
+                font: {
+                    size: 12
+                }
+            }
+        },
+        title: {
+            display: true,
+            text: 'Global Wallet Flow Analysis',
+        },
+    },
+    scales: {
+        y: {
+            beginAtZero: true,
+            title: {
+                display: true,
+                text: 'Amount (ETH)',
+                font: {
+                    size: 12
+                }
+            },
+            ticks: {
+                callback: (value: number | string) => `${Number(value).toLocaleString()} ETH`,
+            },
+        },
+        x: {
+            title: {
+                display: true,
+                text: 'Date',
+                font: {
+                    size: 12
+                }
+            },
+        },
+    },
+    interaction: {
+        intersect: false,
+        mode: 'index',
+    },
+}
+
 export default function WalletFlow() {
     const [flowData, setFlowData] = useState<WalletFlowData | null>(null)
     const [isLoading, setIsLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
     const [autoRefresh, setAutoRefresh] = useState(false)
 
-    const fetchWalletFlow = async () => {
-        try {
-            setIsLoading(true)
-            setError(null)
-
-            const response = await fetch('dashboard/api/walletFlow')
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}))
-                throw new Error(errorData.error || 'Failed to fetch wallet flow data')
-            }
-
-            const data = await response.json()
-            if (data.error) {
-                throw new Error(data.error)
-            }
-
-            setFlowData(data)
-        } catch (err: any) {
-            setError(err.message || 'Error fetching wallet flow data')
-            console.error(err)
-        } finally {
-            setIsLoading(false)
-        }
-    }
+    // const toggleAutoRefresh = () => { // Commented out as it's unused
+    //     setAutoRefresh((prev) => !prev)
+    // }
 
     useEffect(() => {
-        fetchWalletFlow()
-
-        let intervalId: NodeJS.Timeout | null = null
-        if (autoRefresh) {
-            intervalId = setInterval(fetchWalletFlow, 60000) // Refresh every minute
+        const fetchData = async () => {
+            try {
+                const response = await fetch('/api/walletflow')
+                const data: WalletFlowData = await response.json()
+                setFlowData(data)
+            } catch (err: unknown) { // Updated `any` to `unknown`
+                console.error(err)
+                setError('Failed to fetch wallet flow data.')
+            } finally {
+                setIsLoading(false)
+            }
         }
 
-        return () => {
-            if (intervalId) {
-                clearInterval(intervalId)
-            }
+        fetchData()
+
+        if (autoRefresh) {
+            const interval = setInterval(fetchData, 60000)
+            return () => clearInterval(interval)
         }
     }, [autoRefresh])
 
-    const toggleAutoRefresh = () => {
-        setAutoRefresh(prev => !prev)
-    }
-
     if (isLoading) {
-        return (
-            <div className="flex items-center justify-center min-h-[400px]">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-            </div>
-        )
+        return <div>Loading...</div>
     }
 
     if (error) {
-        return (
-            <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
-                <p className="text-red-500">{error}</p>
-                <Button onClick={fetchWalletFlow} variant="outline">
-                    Try Again
-                </Button>
-            </div>
-        )
+        return <div>Error: {error}</div>
     }
 
-    if (!flowData) return null
-
     const chartData = {
-        labels: flowData.timestamps,
+        labels: flowData?.timestamps,
         datasets: [
             {
-                fill: true,
                 label: 'Inflow',
-                data: flowData.inflow,
-                borderColor: 'rgb(75, 192, 192)',
-                backgroundColor: 'rgba(75, 192, 192, 0.5)',
-                tension: 0.4,
+                data: flowData?.inflow,
+                borderColor: 'rgba(75,192,192,1)',
+                fill: false,
             },
             {
-                fill: true,
                 label: 'Outflow',
-                data: flowData.outflow,
-                borderColor: 'rgb(255, 99, 132)',
-                backgroundColor: 'rgba(255, 99, 132, 0.5)',
-                tension: 0.4,
+                data: flowData?.outflow,
+                borderColor: 'rgba(255,99,132,1)',
+                fill: false,
             },
         ],
     }
 
-    const options: ChartOptions<'line'> = {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-            legend: {
-                position: 'top',
-                labels: {
-                    font: {
-                        size: 12
-                    }
-                }
-            },
-            title: {
-                display: true,
-                text: 'Global Wallet Flow Analysis',
-            },
-        },
-        scales: {
-            y: {
-                beginAtZero: true,
-                title: {
-                    display: true,
-                    text: 'Amount (ETH)',
-                    font: {
-                        size: 12
-                    }
-                },
-                ticks: {
-                    callback: (value: number | string) => `${Number(value).toLocaleString()} ETH`,
-                },
-            },
-            x: {
-                title: {
-                    display: true,
-                    text: 'Date',
-                    font: {
-                        size: 12
-                    }
-                },
-            },
-        },
-        interaction: {
-            intersect: false,
-            mode: 'index',
-        },
-    }
-
     return (
-        <Card className="w-full bg-white shadow-xl h-[650px]">
-            <CardHeader className='text-black'>
-                <CardTitle>Wallet Flow Chart</CardTitle>
+        <Card>
+            <CardHeader>
+                <CardTitle>Wallet Flow</CardTitle>
             </CardHeader>
-            <CardContent className="p-4">
-                <div className="w-full h-[500px]">
-                    <Line options={{ ...options, maintainAspectRatio: false }} data={chartData} />
-                </div>
+            <CardContent>
+                <Line options={options} data={chartData} />
+                <Button onClick={() => setAutoRefresh(!autoRefresh)}>
+                    {autoRefresh ? 'Stop Auto-Refresh' : 'Start Auto-Refresh'}
+                </Button>
             </CardContent>
         </Card>
     )
