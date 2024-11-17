@@ -20,7 +20,7 @@ export async function GET() {
             throw new Error('Failed to fetch data from Etherscan');
         }
 
-        const data = await response.json();
+        const data: { status: string; result: string; message?: string } = await response.json();
 
         if (data.status !== '1') {
             throw new Error(data.message || 'Failed to fetch data from Etherscan');
@@ -48,10 +48,11 @@ export async function GET() {
             totalOutflow: Number(mockData.reduce((sum, d) => sum + d.outflow, 0).toFixed(2)),
             currentBalance: Number(totalSupply.toFixed(2)),
         });
-    } catch (error: any) {
-        console.error('Error fetching wallet flow data:', error);
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+        console.error('Error fetching wallet flow data:', errorMessage);
         return NextResponse.json(
-            { error: error.message || 'Failed to fetch wallet flow data' },
+            { error: errorMessage },
             { status: 500 }
         );
     }
