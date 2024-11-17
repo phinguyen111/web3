@@ -8,7 +8,7 @@
 
 /* Global styles */
 body {
-    @apply bg-[#1C2128] text-white;
+    @apply bg-[#1C2128] text-black;
 }
 
 /* ReactFlow styles */
@@ -263,3 +263,29 @@ body {
   overflow: hidden;
   max-height: 100vh;
 }
+
+.tooltip {
+    position: relative;
+    display: inline-block;
+  }
+  
+  .tooltip .tooltiptext {
+    visibility: hidden;
+    background-color: #333;
+    color: #fff;
+    text-align: center;
+    padding: 5px;
+    border-radius: 4px;
+    position: absolute;
+    bottom: 125%; /* Position above the button */
+    left: 50%;
+    transform: translateX(-50%);
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  
+  .tooltip:hover .tooltiptext {
+    visibility: visible;
+    opacity: 1;
+  }
