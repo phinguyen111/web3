@@ -122,7 +122,7 @@ export default function HistoryTable() {
       if (data.result && data.result.transactions) {
         const formattedTransactions = await Promise.all(
           data.result.transactions.slice(0, 50).map(async (tx: any) => {
-            const timestamp = parseInt(data.result.timestamp, 16)
+            const timestamp = parseInt(data.result.timestamp, 16);
             return {
               hash: tx.hash,
               method: getTransactionMethod(tx.input),
@@ -130,14 +130,15 @@ export default function HistoryTable() {
               age: getRelativeTime(timestamp),
               from: tx.from,
               to: tx.to || 'Contract Creation',
-              amount: ethers.formatEther(tx.value) + ' ETH',
-              fee: ethers.formatEther(
-                ethers.getBigInt(tx.gas) * ethers.getBigInt(tx.gasPrice)
+              amount: ethers.utils.formatEther(tx.value) + ' ETH',
+              fee: ethers.utils.formatEther(
+                ethers.BigNumber.from(tx.gas).mul(ethers.BigNumber.from(tx.gasPrice))
               ),
               timestamp: timestamp
-            }
+            };
           })
-        )
+        );
+
         setTransactions(formattedTransactions)
       }
     } catch (error) {
@@ -370,8 +371,8 @@ export default function HistoryTable() {
                       <button
                         onClick={() => handleMethodClick(tx.method)}
                         className={`px-3 py-1 rounded-full text-base font-medium w-25 h-10 flex items-center justify-center ${selectedMethod === tx.method
-                            ? 'bg-purple-100 text-[#F5B069] border-2 border-[#F5B069]'
-                            : 'bg-gray-100 text-gray-800 border border-gray-300'
+                          ? 'bg-purple-100 text-[#F5B069] border-2 border-[#F5B069]'
+                          : 'bg-gray-100 text-gray-800 border border-gray-300'
                           }`}
                       >
                         {tx.method}

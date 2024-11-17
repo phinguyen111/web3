@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import GasFeeHeatmap from '@/components/GasFeeHeatmap'
-import GasPrediction from '@/components/GasPrediction'
 import EnhancedAddressRecognition from '@/components/enhanced-address-recognition'
 import WalletFlow from '@/components/walletflow'
 import ETH_price from '@/components/ETH_price'
@@ -64,7 +63,7 @@ export default function Home() {
           <Top_transaction />
         </div>
       </div>
-      
+
       <div className="w-full">
         <Action_add />
       </div>

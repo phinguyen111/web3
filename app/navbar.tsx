@@ -67,6 +67,7 @@ const Navbar: React.FC = () => {
           <div className="hidden md:flex flex-1 justify-evenly items-center font-quantico text-[#FFFFFF]">
             <Link href="/" className="hover:text-[#F5B056]">Home</Link>
             <Link href="/transaction" className="hover:text-[#F5B056]">Transaction</Link>
+            <Link href="/dashboard" className="hover:text-[#F5B056]">Dashboard</Link>
             <Link href="/aboutus" className="hover:text-[#F5B056]">About us</Link>
           </div>
 
@@ -81,8 +82,8 @@ const Navbar: React.FC = () => {
                 onChange={(e) => setSearchInput(e.target.value)}
                 disabled={isLoading}
               />
-              <button 
-                type="submit" 
+              <button
+                type="submit"
                 className="absolute inset-y-0 left-0 flex items-center pl-3"
                 disabled={isLoading}
               >
