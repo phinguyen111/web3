@@ -8,7 +8,6 @@ import { Eye, ChevronLeft, ChevronRight, Download, Copy } from 'lucide-react'
 import { toast } from "@/components/ui/use-toast"
 import { ethers } from 'ethers';
 
-
 interface Stats {
   transactions24h: number;
   pendingTransactions: number;
@@ -17,28 +16,33 @@ interface Stats {
   totalTransactionAmount: number; // New field for total transaction amount
 }
 
-// Initial state
-const initialStats: Stats = {
-  transactions24h: 0,
-  pendingTransactions: 0,
-  networkFee: 0,
-  avgGasFee: 0,
-  totalTransactionAmount: 0, // Initialize to 0
-};
+// Đã xóa biến initialStats vì không được sử dụng
+
+interface Transaction {
+  hash: string;
+  method: string;
+  block: string;
+  age: string;
+  from: string;
+  to: string;
+  amount: string;
+  fee: string;
+  timestamp: number;
+}
 
 export default function HistoryTable() {
   // State variables
-  const [transactions, setTransactions] = useState<any[]>([]);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedMethod, setSelectedMethod] = useState<string | null>(null);
   const [totalPages] = useState(5000);
   const [isMobile, setIsMobile] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-
   // Etherscan API configuration
   const ETHERSCAN_API_KEY = "RQ1E2Y5VTM4EKCNZTDHD58UCIXMPD34N1J"; // Replace with your API key
-  const API_URL = `https://api.etherscan.io/api?module=proxy&action=eth_blockNumber&apikey=${ETHERSCAN_API_KEY}`;
+  // Đã xóa biến API_URL vì không được sử dụng
+
   interface MethodSignatures {
     [key: string]: string;
   }
@@ -101,8 +105,20 @@ export default function HistoryTable() {
     return `${address.slice(0, 6)}...${address.slice(-4)}`;
   };
 
+  interface RawTransaction {
+    hash: string;
+    input: string;
+    blockNumber: string;
+    from: string;
+    to: string | null;
+    value: string;
+    gas: string;
+    gasPrice: string;
+    // Các thuộc tính khác nếu cần
+  }
+
   // Fetch latest blocks and their transactions
-  const fetchLatestTransactions = async () => {
+  const fetchLatestTransactions = useCallback(async () => {
     try {
       setIsLoading(true);
 
@@ -111,7 +127,7 @@ export default function HistoryTable() {
         `https://api.etherscan.io/api?module=proxy&action=eth_blockNumber&apikey=${ETHERSCAN_API_KEY}`
       );
       const latestBlockData = await latestBlockResponse.json();
-      const latestBlock = parseInt(latestBlockData.result, 16);
+      // Đã xóa biến latestBlock vì không được sử dụng
 
       // Then get transactions from the latest blocks
       const response = await fetch(
@@ -121,7 +137,7 @@ export default function HistoryTable() {
 
       if (data.result && data.result.transactions) {
         const formattedTransactions = await Promise.all(
-          data.result.transactions.slice(0, 50).map(async (tx: any) => {
+          data.result.transactions.slice(0, 50).map(async (tx: RawTransaction) => {
             const timestamp = parseInt(data.result.timestamp, 16);
             return {
               hash: tx.hash,
@@ -151,9 +167,7 @@ export default function HistoryTable() {
     } finally {
       setIsLoading(false);
     }
-  };
-
-
+  }, [ETHERSCAN_API_KEY]);
 
   // Effect to fetch data
   useEffect(() => {
@@ -163,7 +177,7 @@ export default function HistoryTable() {
     }, 150000); // Refresh every 2.5 minutes
 
     return () => clearInterval(interval);
-  }, [currentPage]); //Refresh every page changes
+  }, [fetchLatestTransactions]);
 
   // Effect to handle responsive design
   useEffect(() => {
@@ -174,7 +188,6 @@ export default function HistoryTable() {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
-
 
   // Utility functions (handleDownload, copyToClipboard, etc.)
   const copyToClipboard = async (text: string) => {
@@ -257,7 +270,6 @@ export default function HistoryTable() {
     <div className="min-h-screen bg-[#1C2128] text-white font-exo2">
       <div className="container mx-auto p-4">
 
-
         {/* Transaction table header */}
         <div className="flex flex-col md:flex-row justify-between items-center mb-4">
           <div className="mb-4 md:mb-0">
@@ -317,7 +329,6 @@ export default function HistoryTable() {
             </Button>
           </div>
         </div>
-
 
         {/* Transaction table */}
         <div className="overflow-x-auto">
@@ -501,6 +512,3 @@ const formatFee = (fee: string) => {
   const value = parseFloat(fee);
   return value.toFixed(6);
 };
-
-
-
