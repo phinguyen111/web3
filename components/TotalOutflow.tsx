@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function TotalOutflow() {
     const [totalOutflow, setTotalOutflow] = useState<number | null>(null);

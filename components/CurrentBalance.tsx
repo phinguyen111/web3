@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function CurrentBalance() {
     const [currentBalance, setCurrentBalance] = useState<number | null>(null);
