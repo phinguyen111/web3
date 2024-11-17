@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button"
 
 import { Card, CardContent } from "@/components/ui/card"
 import { CheckCircle, Clock } from "lucide-react"
-import Image from 'next/image'
 
 export default function TransactionPage() {
   return (
