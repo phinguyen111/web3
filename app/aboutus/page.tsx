@@ -67,7 +67,7 @@ const AboutUs: React.FC = () => {
 
         {/* Notable Achievements */}
         <section className="mb-8 md:mb-12 leading-loose text-base md:text-lg">
-          <h2 className="text-3xl md:text-5xl font-bold text-[#F5B056] mb-4 md:mb-6 font-quantico text-right">Jbiz\'s Notable Achievements</h2>
+          <h2 className="text-3xl md:text-5xl font-bold text-[#F5B056] mb-4 md:mb-6 font-quantico text-right"> Notable Achievements of JBiz</h2>
           <p className="mb-4">Since its launch, <span className="text-[#F5B056] font-bold">Jbiz</span> has achieved significant milestones, solidifying its position in the cryptocurrency and decentralized finance (DeFi) space:</p>
           <ul className="list-disc list-inside space-y-2 pl-4 md:pl-8">
             <li>Over 1 million users globally, with a presence in more than 100 countries.</li>
@@ -106,7 +106,7 @@ const AboutUs: React.FC = () => {
         {/* Join Us */}
         <section className="text-left text-base md:text-lg">
           <h2 className="text-3xl md:text-5xl font-bold text-[#F5B056] mb-4 md:mb-6 font-quantico text-right">Join Us</h2>
-          <p className="mb-4">Become a part of <span className="text-[#F5B056] font-bold">Jbiz</span> and help us redefine the future of decentralized finance. Whether you\'re an investor, developer, or a cryptocurrency enthusiast, you can join us and grow together.</p>
+          <p className="mb-4">Become a part of <span className="text-[#F5B056] font-bold">Jbiz</span> and help us redefine the future of decentralized finance. Whether you are an investor, developer, or a cryptocurrency enthusiast, you can join us and grow together.</p>
           <p className="mb-4 md:mb-8">Join us today and lead the way in the world of crypto with <span className="text-[#F5B056] font-bold">Jbiz</span>!</p>
           <h3 className="text-2xl md:text-4xl font-bold mb-4 font-quantico text-[#F5B056]">Shape the Future of Crypto Together!</h3>
           <button className="bg-[#F5B056] text-[#161A20] font-bold py-2 px-6 md:py-3 md:px-8 rounded-full hover:bg-[#161A20] hover:text-[#F5B056] transition duration-300 text-sm md:text-base">

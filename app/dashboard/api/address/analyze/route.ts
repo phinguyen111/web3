@@ -2,47 +2,58 @@ import { NextResponse } from 'next/server'
 
 const ETHERSCAN_API_URL = 'https://api.etherscan.io/api'
 
-function calculateTotalEther(transactions: any[], direction: 'from' | 'to', targetAddress: string): string {
+// Định nghĩa kiểu Transaction để thay thế any[]
+interface Transaction {
+    from: string;
+    to: string;
+    value: string;
+}
+
+function calculateTotalEther(
+    transactions: Transaction[], // Thay any[] bằng kiểu Transaction[]
+    direction: 'from' | 'to',
+    targetAddress: string
+): string {
     const total = transactions.reduce((sum, tx) => {
         if (direction === 'from' && tx.from.toLowerCase() === targetAddress.toLowerCase()) {
-            return sum + parseFloat(tx.value)
+            return sum + parseFloat(tx.value);
         }
         if (direction === 'to' && tx.to.toLowerCase() === targetAddress.toLowerCase()) {
-            return sum + parseFloat(tx.value)
+            return sum + parseFloat(tx.value);
         }
-        return sum
-    }, 0)
+        return sum;
+    }, 0);
 
-    return (total / 1e18).toFixed(4) // Convert from wei to ether and format
+    return (total / 1e18).toFixed(4); // Convert từ wei sang ether và định dạng
 }
 
 export async function POST(request: Request) {
     try {
-        const { address } = await request.json()
+        const { address } = await request.json();
 
-        // Validate Ethereum address format
+        // Kiểm tra định dạng địa chỉ Ethereum
         if (!address.match(/^0x[a-fA-F0-9]{40}$/)) {
             return NextResponse.json(
                 { error: 'Invalid Ethereum address format' },
                 { status: 400 }
-            )
+            );
         }
 
-        // Fetch transaction data from Etherscan
+        // Lấy dữ liệu giao dịch từ Etherscan
         const response = await fetch(
             `${ETHERSCAN_API_URL}?module=account&action=txlist&address=${address}&startblock=0&endblock=99999999&sort=desc&apikey=${process.env.GAS_API_KEY}`
-        )
+        );
 
-        const data = await response.json()
+        const data = await response.json();
 
         if (data.status === '0') {
             return NextResponse.json(
                 { error: data.message || 'Failed to fetch address data' },
                 { status: 400 }
-            )
+            );
         }
 
-        // Process and format the response
+        // Xử lý và định dạng phản hồi
         const formattedAddress = {
             formatted_address: address,
             components: [
@@ -72,14 +83,14 @@ export async function POST(request: Request) {
                     types: ['total_received']
                 }
             ]
-        }
+        };
 
-        return NextResponse.json(formattedAddress)
+        return NextResponse.json(formattedAddress);
     } catch (error) {
-        console.error('Error processing address:', error)
+        console.error('Error processing address:', error);
         return NextResponse.json(
             { error: 'Failed to process address' },
             { status: 500 }
-        )
+        );
     }
 }
