@@ -1,3 +1,4 @@
+
 'use client'
 
 import React, { useCallback, useState, useEffect } from "react";
@@ -52,23 +53,23 @@ interface ApiTransaction {
 }
 
 interface TokenHolding {
-  token_name: string
-  token_symbol: string
-  amount: string
+  token_name: string;
+  token_symbol: string;
+  amount: string;
 }
 
 interface AddressInfo {
-  address: string
-  gas: string
-  balance: string
-  totalSent: string
-  totalReceived: string
-  privateNameTag?: string
-  firstSeen?: string
-  lastSeen?: string
-  fundedBy?: string
-  multichainInfo?: string
-  value: string
+  address: string;
+  gas: string;
+  balance: string;
+  totalSent: string;
+  totalReceived: string;
+  privateNameTag?: string;
+  firstSeen?: string;
+  lastSeen?: string;
+  fundedBy?: string;
+  multichainInfo?: string;
+  value: string;
 }
 
 const CircleNode = ({ data }: NodeProps) => (
@@ -239,12 +240,12 @@ export default function TransactionExplorer() {
     totalSent: "",
     totalReceived: "",
     value: "",
-  })
-  const [tokenHoldings, setTokenHoldings] = useState<TokenHolding[]>([])
+  });
+  const [tokenHoldings, setTokenHoldings] = useState<TokenHolding[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentAddress, setCurrentAddress] = useState<string>("");
-  const [searchedAddress, setSearchedAddress] = useState<string>("");
+  const [searchedAddress, setSearchedAddress] = useState<string>(""); // Now used in handleExport
   const [activeView, setActiveView] = useState<"transaction" | "graph">("graph");
   const [showRightPanel, setShowRightPanel] = useState(activeView === "graph");
   const [selectedEdge, setSelectedEdge] = useState<ApiTransaction[] | null>(null);
@@ -252,7 +253,7 @@ export default function TransactionExplorer() {
   const itemsPerPage = 4;
   const [totalPages, setTotalPages] = useState(1);
   const searchParams = useSearchParams();
-  const [isTokenHoldingsExpanded, setIsTokenHoldingsExpanded] = useState(false)
+  const [isTokenHoldingsExpanded, setIsTokenHoldingsExpanded] = useState(false);
 
   const [filterType, setFilterType] = useState("all");
   const [addressType, setAddressType] = useState("all");
@@ -322,7 +323,7 @@ export default function TransactionExplorer() {
     const newAddress = searchParams.get('address');
     if (newAddress) {
       fetchAddressInfo(newAddress);
-      fetchTransactionData(newAddress);
+      fetchTransactionData(newAddress, true); // Ensure searchedAddress is updated
     }
   }, [searchParams, fetchAddressInfo, fetchTransactionData]);
 
@@ -380,7 +381,7 @@ export default function TransactionExplorer() {
 
       const link = document.createElement('a');
       link.href = url;
-      link.download = `transaction_history.csv`;
+      link.download = `transaction_history_${searchedAddress || currentAddress}.csv`;
 
       document.body.appendChild(link);
       link.click();
