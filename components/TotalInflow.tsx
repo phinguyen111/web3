@@ -13,9 +13,9 @@ export default function TotalInflow() {
                 }
                 const data = await response.json();
                 setTotalInflow(data.totalInflow);
-            } catch (err: any) {
-                console.error('Fetch error:', err);  // Thêm log chi tiết
-                setError(err.message);
+            } catch (err) {
+                console.error('Fetch error:', err); // Log lỗi chi tiết
+                setError((err as Error).message); // Ép kiểu an toàn để truy cập `message`
             }
         };
 
@@ -31,7 +31,7 @@ export default function TotalInflow() {
             <div className="flex items-center justify-center h-full">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
             </div>
-        )
+        );
     }
 
     return (

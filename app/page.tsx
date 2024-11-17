@@ -1,16 +1,19 @@
 "use client"
-// Import nescesrary libraries from React, Next.js and others components
-import React, { useState, useEffect, useRef } from 'react'
+
+import React, { useState, useRef } from 'react'
 import { Button } from "@/components/ui/button"
+//import { Input } from "@/components/ui/input"
 import Image from "next/image"
 import { Shield, BarChart2, FileText, Layout, ArrowRight, ChevronDown } from "lucide-react"
-import { motion, useAnimation, AnimatePresence, useMotionValue, useTransform, useScroll } from 'framer-motion'
+import { motion, AnimatePresence, useMotionValue, useTransform, useScroll } from 'framer-motion'
+//import { useInView } from 'react-intersection-observer'
+//import { ArrowRightIcon } from 'lucide-react'
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import Link from 'next/link';
 
-//Declare an interface for image properties
+
 interface ImageProps {
   src: string
   alt: string
@@ -19,28 +22,26 @@ interface ImageProps {
   className?: string
 }
 
-// Component FloatingImage to display a floating image with a repeating motion effect
 const FloatingImage: React.FC<ImageProps> = ({ src, alt, width, height, className }) => {
   const y = useMotionValue(0)
   const rotate = useTransform(y, [-20, 20], [-5, 5])
 
   return (
     <motion.div
-      style={{ y, rotate }}  // Apply motion to Y and rotate values
-      animate={{ y: [0, -10, 0] }}  //Repetitive motion effect for Y axis
-      transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}  // Set up repeatable movements
+      style={{ y, rotate }}
+      animate={{ y: [0, -10, 0] }}
+      transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
       className={className}
     >
-      <Image src={src} alt={alt} width={width} height={height} />  // Hiển thị hình ảnh
+      <Image src={src} alt={alt} width={width} height={height} />
     </motion.div>
   )
 }
-// Component MouseInteractiveImage lets the image interact with the mouse
+
 const MouseInteractiveImage: React.FC<ImageProps> = ({ src, alt, width, height, className }) => {
   const x = useMotionValue(0)
   const y = useMotionValue(0)
 
-  // Handle events when moving the mouse
   const handleMouseMove = (event: React.MouseEvent<HTMLDivElement>) => {
     const rect = event.currentTarget.getBoundingClientRect()
     const centerX = rect.left + rect.width / 2
@@ -63,7 +64,7 @@ const MouseInteractiveImage: React.FC<ImageProps> = ({ src, alt, width, height, 
     </motion.div>
   )
 }
-// Defines the interface for FeatureCard properties
+
 interface FeatureCardProps {
   title: string
   description: string
@@ -72,7 +73,6 @@ interface FeatureCardProps {
   gradient: string
 }
 
-// Component FeatureCard to display a card with title, description and icon
 const FeatureCard: React.FC<FeatureCardProps> = ({ title, description, icon, className, gradient }) => (
   <div className={`rounded-2xl p-6 flex flex-col justify-between overflow-hidden relative ${className}`}>
     <div className="absolute inset-0" style={{ background: gradient, opacity: 0.8 }} />
@@ -88,7 +88,6 @@ const FeatureCard: React.FC<FeatureCardProps> = ({ title, description, icon, cla
   </div>
 )
 
-// Defines the interface for InfoCard properties
 interface InfoCardProps {
   icon: React.ReactNode
   title: string
@@ -96,7 +95,6 @@ interface InfoCardProps {
   cta: React.ReactNode
 }
 
-// Component InfoCard to display an information card with title, description, and call to action
 const InfoCard: React.FC<InfoCardProps> = ({ icon, title, description, cta }) => (
   <div className="bg-gradient-to-br from-[#1E1E1E] to-[#2D2D2D] rounded-3xl p-8 flex flex-col items-center text-center">
     <div className="relative w-20 h-20 mb-6">
@@ -116,7 +114,6 @@ const InfoCard: React.FC<InfoCardProps> = ({ icon, title, description, cta }) =>
   </div>
 )
 
-// CreateIcon icon for InfoCard
 const CreateIcon = () => (
   <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
     <path d="M20 8V32M8 20H32M14 14L26 26M26 14L14 26" stroke="url(#create-gradient)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -129,7 +126,6 @@ const CreateIcon = () => (
   </svg>
 )
 
-// LoginIcon icon for InfoCard
 const LoginIcon = () => (
   <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
     <rect x="8" y="12" width="24" height="16" rx="2" stroke="url(#login-gradient)" strokeWidth="2" />
@@ -143,7 +139,6 @@ const LoginIcon = () => (
   </svg>
 )
 
-// ManageIcon icon for InfoCard
 const ManageIcon = () => (
   <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
     <path d="M8 14C8 11.7909 9.79086 10 12 10H28C30.2091 10 32 11.7909 32 14V26C32 28.2091 30.2091 30 28 30H12C9.79086 30 8 28.2091 8 26V14Z" stroke="url(#manage-gradient)" strokeWidth="2" />
@@ -158,7 +153,6 @@ const ManageIcon = () => (
   </svg>
 )
 
-// FAQ data in the form of questions and answers
 interface FAQItem {
   question: string
   answer: string
@@ -182,39 +176,35 @@ const faqData: FAQItem[] = [
     answer: "Yes, one wallet can be used for multiple types of cryptocurrencies, especially if it supports various blockchain protocols. Many multi-currency wallets allow users to manage different cryptocurrencies in a single interface, simplifying the process of storage and transactions.",
   }
 ]
-// The main component is exported to display the web page
+
 export default function Component() {
   const [openIndex, setOpenIndex] = useState<number | null>(0)
-  const [isHovered, setIsHovered] = useState(false)
+  //const [isHovered, setIsHovered] = useState(false)
   const [email, setEmail] = useState('')
   const { scrollY } = useScroll()
-  const controls = useAnimation()
+  //const controls = useAnimation()
 
-  //Create references (refs) to scroll to specific sections in the page
+
   const trustedCompaniesRef = useRef<HTMLElement>(null)
   const exploreMoreRef = useRef<HTMLDivElement>(null);
   const receiveTransmissionsRef = useRef<HTMLElement>(null)
 
-  // The handler function when the user clicks the "Get Started" button, will scroll the page to the "Trusted Companies" section
   const handleGetStartedClick = () => {
     trustedCompaniesRef.current?.scrollIntoView({ behavior: 'smooth' })
   }
 
-  // The function handles when the user clicks the "Explore More" button, scrolling the page to the corresponding section
   const handleExploreMoreClick = () => {
     exploreMoreRef.current?.scrollIntoView({ behavior: 'smooth' })
   }
 
-  // Function to handle when a user submits an email registration form
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     console.log('Submitted email:', email)
     setEmail('')
   }
-  // State manages the hover state of the information receiving section
-  const [isTransmissionHovered, setIsTransmissionHovered] = useState(false)
 
-  // The function handles when the user clicks the "Register Now" button, scrolling to the registration section
+  const [, setIsTransmissionHovered] = useState(false)
+
   const handleRegisterNowClick = () => {
     receiveTransmissionsRef.current?.scrollIntoView({ behavior: 'smooth' })
     setIsTransmissionHovered(true)
@@ -229,12 +219,11 @@ export default function Component() {
       ease: "easeInOut"
     }
   }
-  //Function to toggle questions in the FAQ section
+
   const toggleQuestion = (index: number) => {
     setOpenIndex(openIndex === index ? null : index)
   }
 
-  //List of trusted companies, each with a name and logo
   const companies = [
     { name: 'Binance', logo: '/brands/binance.svg' },
     { name: 'Solana', logo: '/brands/solana.svg' },
@@ -243,7 +232,6 @@ export default function Component() {
     { name: 'Algorand', logo: '/brands/Igorand.svg' },
   ]
 
-  //Cryptocurrency data, each with name, symbol, price, price change and price chart
   const cryptoData = [
     { name: "Bitcoin", symbol: "BTC", price: "$56,290.30", change: "+1.68%", chart: "chart-up" },
     { name: "Ethereum", symbol: "ETH", price: "$4,284.81", change: "+4.36%", chart: "chart-up" },
@@ -251,9 +239,8 @@ export default function Component() {
     { name: "Wax", symbol: "WAXP", price: "$0.97", change: "-2.62%", chart: "chart-down" },
     { name: "Polkadot", symbol: "DOT", price: "$42.22", change: "+7.56%", chart: "chart-up" },
   ]
-  // Main website interface
+
   return (
-    // Main container div with minimum height to cover the full screen, dark background color, white text, and custom font.
     <div className="min-h-screen bg-[#0D0E12] text-white font-exo2">
       <main className="space-y-12 md:space-y-24 bg-[#1D222C]">
         <section className="relative min-h-screen flex flex-col items-center justify-center py-12 md:py-24 px-4 overflow-hidden">
@@ -278,7 +265,6 @@ export default function Component() {
           </div>
         </section>
 
-        {/* Section showing companies trusted by */}
         <section ref={trustedCompaniesRef} className="text-white py-10 px-4">
           <div className="max-w-5xl mx-auto">
             <h2 className="text-center text-sm font-semibold uppercase tracking-wider mb-4">
@@ -287,7 +273,6 @@ export default function Component() {
             <h3 className="text-center text-2xl md:text-3xl font-bold mb-8 md:mb-12">
               USED BY THE WORLD&apos;S MOST AVERAGE COMPANIES
             </h3>
-            {/* Display list of companies' logos */}
             <div className="flex flex-wrap justify-center items-center gap-6 md:gap-8">
               {companies.map((company) => (
                 <div key={company.name} className="w-24 md:w-32 lg:w-40">
@@ -304,7 +289,6 @@ export default function Component() {
           </div>
         </section>
 
-        {/* Section displaying info cards for platform features */}
         <div className="py-12 md:py-16 px-4 sm:px-6 lg:px-8">
           <div className="max-w-7xl mx-auto">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
@@ -315,7 +299,6 @@ export default function Component() {
           </div>
         </div>
 
-        {/* Section displaying a visual illustration */}
         <section className="relative min-h-screen flex flex-col md:flex-row items-center bg-[#1D222C] overflow-hidden px-4 py-12 md:py-0">
           <motion.div
             animate={floatAnimation}
@@ -385,7 +368,7 @@ export default function Component() {
                   24/7 access to full service customer support
                 </h1>
                 <p className="text-gray-300 text-sm sm:text-base md:text-lg leading-relaxed max-w-2xl">
-                  Experience round-the-clock assistance from our dedicated team. We are here to ensure your success and provide the support you need, whenever you need it.
+                  Experience round-the-clock assistance from our dedicated team. We&apos;re here to ensure your success and provide the support you need, whenever you need it.
                 </p>
                 <motion.div
                   whileHover={{ scale: 1.05 }}
@@ -404,7 +387,6 @@ export default function Component() {
           </div>
         </section>
 
-        {/* Customer support information section */}
         <div ref={exploreMoreRef} className="min-h-screen bg-[#1D222C] text-white font-exo2">
           <div className="p-4 md:p-6 space-y-32"> {/* Increased space-y value */}
             <div className="relative overflow-hidden">
@@ -481,7 +463,6 @@ export default function Component() {
               </div>
             </div>
 
-            {/* Features and benefits information section */}
             <div className="max-w-4xl mx-auto pt-8"> {/* Added top padding */}
               <h2 className="text-2xl md:text-3xl font-bold text-center mb-6">FEATURES AND BENEFITS</h2>
               <p className="text-center text-gray-400 mb-10 md:mb-12 max-w-2xl mx-auto text-sm md:text-base">
@@ -585,7 +566,6 @@ export default function Component() {
                 y: useTransform(scrollY, [0, 1000], [0, 300]),
               }}
             >
-              {/* Interactive background image that reacts to mouse movements */}
               <MouseInteractiveImage
                 src="/homepage/circles.svg"
                 alt="Background Circles"
@@ -593,10 +573,9 @@ export default function Component() {
                 height={1080}
                 className="w-full h-full object-cover"
               />
-              {/* Additional overlay to dim the background */}
               <div className="absolute inset-0 bg-[#1D222C] opacity-50"></div>
             </motion.div>
-            {/* Main content container with padding and relative z-index to stay above the background */}
+
             <div className="relative z-10 py-8 px-4 sm:px-6 lg:px-8">
               <div className="max-w-7xl mx-auto">
                 <section className="flex flex-col md:flex-row items-center justify-between space-y-8 md:space-y-0 md:space-x-8">
@@ -619,7 +598,7 @@ export default function Component() {
                       Register now
                     </Button>
                   </motion.div>
-                  {/* Floating image next to the text block */}
+
                   <FloatingImage
                     src="/img.png"
                     alt="Crypto investing concept"
@@ -628,7 +607,7 @@ export default function Component() {
                     className="md:w-1/2 relative h-[200px] sm:h-[250px] md:h-[300px] lg:h-[400px]"
                   />
                 </section>
-                {/* Call-to-action section to subscribe to transmissions */}
+
                 <div className="mt-10 md:mt-12 max-w-md mx-auto">
                   <motion.h2
                     initial={{ opacity: 0, y: -20 }}
@@ -638,7 +617,7 @@ export default function Component() {
                   >
                     Receive transmissions
                   </motion.h2>
-                  {/* Subscription text with privacy policy link */}
+
                   <motion.p
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -652,7 +631,6 @@ export default function Component() {
                           Privacy policy
                         </button>
                       </PopoverTrigger>
-                      {/* Content of the privacy policy displayed in a popover */}
                       <PopoverContent className="w-80 bg-[#1D222C] text-white border-gray-700">
                         <div className="space-y-2">
                           <h3 className="font-medium">Privacy Policy</h3>
