@@ -385,7 +385,7 @@ export default function Component() {
                   24/7 access to full service customer support
                 </h1>
                 <p className="text-gray-300 text-sm sm:text-base md:text-lg leading-relaxed max-w-2xl">
-                  Experience round-the-clock assistance from our dedicated team. We're here to ensure your success and provide the support you need, whenever you need it.
+                  Experience round-the-clock assistance from our dedicated team. We are here to ensure your success and provide the support you need, whenever you need it.
                 </p>
                 <motion.div
                   whileHover={{ scale: 1.05 }}
