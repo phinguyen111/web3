@@ -10,11 +10,6 @@ import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement
 // Register Chart.js components
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
-// Define type for Transaction
-interface Transaction {
-    hash: string;
-}
-
 // Define type for data returned from Infura
 interface TransactionData {
     time: string;
