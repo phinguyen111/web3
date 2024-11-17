@@ -39,6 +39,7 @@ import { Button } from "@/components/ui/button";
 import { useSearchParams } from 'next/navigation';
 import HistoryTable from "@/components/HistoryTable";
 const ReactFlow = dynamic(() => import("reactflow").then((mod) => mod.default), { ssr: false });
+import Image from 'next/image';
 
 interface ApiTransaction {
   from: string;
@@ -49,7 +50,6 @@ interface ApiTransaction {
   block?: string;
   fee?: string;
 }
-
 
 interface TokenHolding {
   token_name: string
@@ -228,7 +228,6 @@ const forceSimulation = (nodes: Node[], edges: Edge[]) => {
   return { nodes, edges };
 };
 
-
 export default function TransactionExplorer() {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
@@ -248,14 +247,11 @@ export default function TransactionExplorer() {
   const [searchedAddress, setSearchedAddress] = useState<string>("");
   const [activeView, setActiveView] = useState<"transaction" | "graph">("graph");
   const [showRightPanel, setShowRightPanel] = useState(activeView === "graph");
-
-  const [isOpen, setIsOpen] = useState(false);
   const [selectedEdge, setSelectedEdge] = useState<ApiTransaction[] | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 4;
   const [totalPages, setTotalPages] = useState(1);
   const searchParams = useSearchParams();
-  const [address, setAddress] = useState<string | null>(null);
   const [isTokenHoldingsExpanded, setIsTokenHoldingsExpanded] = useState(false)
 
   const [filterType, setFilterType] = useState("all");
@@ -267,16 +263,7 @@ export default function TransactionExplorer() {
   const [searchAddress, setSearchAddress] = useState("");
   const [analysisResults, setAnalysisResults] = useState<{ address: string; txCount: number; totalEth: number }[]>([]);
 
-  useEffect(() => {
-    const newAddress = searchParams.get('address');
-    if (newAddress) {
-      setAddress(newAddress);
-      fetchAddressInfo(newAddress);
-      fetchTransactionData(newAddress);
-    }
-  }, [searchParams]);
-
-  const fetchAddressInfo = async (address: string) => {
+  const fetchAddressInfo = useCallback(async (address: string) => {
     setIsLoading(true);
     setError(null);
 
@@ -296,9 +283,9 @@ export default function TransactionExplorer() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
-  const fetchTransactionData = async (address: string, updateSearched: boolean = false) => {
+  const fetchTransactionData = useCallback(async (address: string, updateSearched: boolean = false) => {
     setIsLoading(true);
     setError(null);
 
@@ -329,11 +316,19 @@ export default function TransactionExplorer() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [setEdges, setNodes]);
+
+  useEffect(() => {
+    const newAddress = searchParams.get('address');
+    if (newAddress) {
+      fetchAddressInfo(newAddress);
+      fetchTransactionData(newAddress);
+    }
+  }, [searchParams, fetchAddressInfo, fetchTransactionData]);
 
   const onNodeDoubleClick = useCallback((event: React.MouseEvent, node: Node) => {
     fetchTransactionData(node.id, false);
-  }, []);
+  }, [fetchTransactionData]);
 
   const onEdgeClick = useCallback((event: React.MouseEvent, edge: Edge) => {
     const relatedTransactions = apiTransactions.filter(
@@ -342,7 +337,6 @@ export default function TransactionExplorer() {
 
     if (relatedTransactions.length > 0) {
       setSelectedEdge(relatedTransactions);
-      setIsOpen(true);
     }
   }, [apiTransactions]);
 
@@ -362,34 +356,6 @@ export default function TransactionExplorer() {
     }).catch((err) => {
       console.error('Failed to copy: ', err);
     });
-  };
-
-  const handleDownload = () => {
-    if (!apiTransactions.length) return;
-
-    const headers = ['Transaction Hash', 'Method', 'Block', 'Age', 'From', 'To', 'Amount', 'Fee'];
-    const csvContent = [
-      headers.join(','),
-      ...apiTransactions.map(tx => [
-        tx.hash || '',
-        'Transfer',
-        tx.block || '',
-        new Date(tx.timestamp * 1000).toLocaleString(),
-        tx.from,
-        tx.to,
-        `${tx.amount} ETH`,
-        tx.fee || '0'
-      ].join(','))
-    ].join('\n');
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.setAttribute('href', url);
-    link.setAttribute('download', `transactions_${searchedAddress}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
   };
 
   const handleExport = () => {
@@ -458,7 +424,7 @@ export default function TransactionExplorer() {
     const simulatedLayout = forceSimulation(nodes, edges);
     setNodes(simulatedLayout.nodes);
     setEdges(simulatedLayout.edges);
-  }, [apiTransactions, filterType, addressType, minAmount, maxAmount, startDate, endDate, currentAddress]);
+  }, [apiTransactions, filterType, addressType, minAmount, maxAmount, startDate, endDate, currentAddress, setNodes, setEdges]);
 
   const updateAnalysis = useCallback(() => {
     const analysis = apiTransactions.reduce((acc, tx) => {
@@ -505,10 +471,12 @@ export default function TransactionExplorer() {
 
         {/* Wallet overview section */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center mt-4 space-y-4 sm:space-y-0">
-          <img
+          <Image
             src="https://static.vecteezy.com/system/resources/previews/030/750/807/original/user-icon-in-trendy-outline-style-isolated-on-white-background-user-silhouette-symbol-for-your-website-design-logo-app-ui-illustration-eps10-free-vector.jpg"
             alt="User"
-            className="rounded-full h-10 w-10 mr-4"
+            width={40}
+            height={40}
+            className="rounded-full mr-4"
           />
           <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4 flex-grow font-exo2">
             <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-1 sm:space-y-0 sm:space-x-2">
@@ -520,6 +488,7 @@ export default function TransactionExplorer() {
                 <button
                   key={index}
                   className="text-white p-1 rounded-lg transition duration-200 ease-in-out hover:bg-gray-700"
+                  onClick={icon === 'copy' ? () => copyToClipboard(addressInfo.address) : undefined}
                 >
                 </button>
               ))}
@@ -641,24 +610,23 @@ export default function TransactionExplorer() {
         </main>
       </div>
 
-
       {/* Transaction graph and history buttons */}
       <div className="flex justify-between items-center w-full bg-[#1a2b4b] p-4 border-b border-blue-700">
         <div className="flex space-x-2">
           <Button
-            onClick={() => setActiveView("transaction")}
+            onClick={() => handleViewChange("transaction")}
             className={`font-bold py-2 px-4 rounded-t-lg transition duration-200 ease-in-out ${activeView === "transaction"
-                ? "bg-white text-[#1a2b4b]"
-                : "bg-transparent text-white hover:bg-blue-600"
+              ? "bg-white text-[#1a2b4b]"
+              : "bg-transparent text-white hover:bg-blue-600"
               }`}
           >
             Transaction history
           </Button>
           <Button
-            onClick={() => setActiveView("graph")}
+            onClick={() => handleViewChange("graph")}
             className={`font-bold py-2 px-4 rounded-t-lg transition duration-200 ease-in-out ${activeView === "graph"
-                ? "bg-white text-[#1a2b4b]"
-                : "bg-transparent text-white hover:bg-blue-600"
+              ? "bg-white text-[#1a2b4b]"
+              : "bg-transparent text-white hover:bg-blue-600"
               }`}
           >
             Transaction Graph
