@@ -15,7 +15,7 @@ const AboutUs: React.FC = () => {
     { name: 'Jack, USA', image: '/jack.jpg', text: '"I\'m really impressed by Jbiz\'s level of security and transparency. Staking and participating in DeFi on this platform is incredibly easy and offers attractive returns."' },
     { name: 'J97, Italy', image: '/j97.jpg', text: '"The support team at Jbiz is truly outstanding. Anytime I encounter an issue, they resolve it quickly and professionally. Jbiz is not just an exchange but a friendly community."' },
   ]
-  
+
   return (
     <div className="bg-[#1C2128] text-[#FFFFFF] min-h-screen p-4 sm:p-6 md:p-8 font-exo2">
       <div className="max-w-6xl mx-auto">
@@ -28,14 +28,14 @@ const AboutUs: React.FC = () => {
 
         {/* Mission and Aims */}
         <section className="mb-8 lg:mb-12 flex flex-col lg:flex-row items-center space-y-6 lg:space-y-0 lg:space-x-8">
-          <div className="w-full lg:w-1/2 bg-[#161A20] rounded-full p-4 sm:p-6 lg:p-8 flex items-center justify-center aspect-square" style={{height: '300px', borderRadius: '50%' }}>
+          <div className="w-full lg:w-1/2 bg-[#161A20] rounded-full p-4 sm:p-6 lg:p-8 flex items-center justify-center aspect-square" style={{ height: '300px', borderRadius: '50%' }}>
             <div className="max-w-xs">
               <p className="text-sm sm:text-base lg:text-lg leading-relaxed text-justify text-white">
                 <span className="text-[#F5B056] font-bold">Jbiz</span> aims to become a pioneering platform in the decentralized finance space, driving the widespread adoption and application of blockchain technology to billions of people worldwide, creating a transparent, fair, and borderless financial ecosystem.
               </p>
             </div>
           </div>
-          <div className="w-full lg:w-1/2 bg-[#F5B056] rounded-full p-4 sm:p-6 lg:p-8 flex items-center justify-center aspect-square" style={{height: '300px', borderRadius: '50%' }}>
+          <div className="w-full lg:w-1/2 bg-[#F5B056] rounded-full p-4 sm:p-6 lg:p-8 flex items-center justify-center aspect-square" style={{ height: '300px', borderRadius: '50%' }}>
             <div className="max-w-xs">
               <p className="text-sm sm:text-base lg:text-lg font-semibold text-justify text-[#161A20]">
                 The mission of <span className="font-bold">Jbiz</span> is to provide users with the most advanced tools and services to trade, invest, and manage crypto assets safely and efficiently. We are committed to building a trusted platform that makes it easy for everyone to access and thrive in the world of cryptocurrency.
@@ -67,7 +67,7 @@ const AboutUs: React.FC = () => {
 
         {/* Notable Achievements */}
         <section className="mb-8 md:mb-12 leading-loose text-base md:text-lg">
-          <h2 className="text-3xl md:text-5xl font-bold text-[#F5B056] mb-4 md:mb-6 font-quantico text-right">Jbiz's Notable Achievements</h2>
+          <h2 className="text-3xl md:text-5xl font-bold text-[#F5B056] mb-4 md:mb-6 font-quantico text-right">Jbiz\'s Notable Achievements</h2>
           <p className="mb-4">Since its launch, <span className="text-[#F5B056] font-bold">Jbiz</span> has achieved significant milestones, solidifying its position in the cryptocurrency and decentralized finance (DeFi) space:</p>
           <ul className="list-disc list-inside space-y-2 pl-4 md:pl-8">
             <li>Over 1 million users globally, with a presence in more than 100 countries.</li>
@@ -106,7 +106,7 @@ const AboutUs: React.FC = () => {
         {/* Join Us */}
         <section className="text-left text-base md:text-lg">
           <h2 className="text-3xl md:text-5xl font-bold text-[#F5B056] mb-4 md:mb-6 font-quantico text-right">Join Us</h2>
-          <p className="mb-4">Become a part of <span className="text-[#F5B056] font-bold">Jbiz</span> and help us redefine the future of decentralized finance. Whether you're an investor, developer, or a cryptocurrency enthusiast, you can join us and grow together.</p>
+          <p className="mb-4">Become a part of <span className="text-[#F5B056] font-bold">Jbiz</span> and help us redefine the future of decentralized finance. Whether you\'re an investor, developer, or a cryptocurrency enthusiast, you can join us and grow together.</p>
           <p className="mb-4 md:mb-8">Join us today and lead the way in the world of crypto with <span className="text-[#F5B056] font-bold">Jbiz</span>!</p>
           <h3 className="text-2xl md:text-4xl font-bold mb-4 font-quantico text-[#F5B056]">Shape the Future of Crypto Together!</h3>
           <button className="bg-[#F5B056] text-[#161A20] font-bold py-2 px-6 md:py-3 md:px-8 rounded-full hover:bg-[#161A20] hover:text-[#F5B056] transition duration-300 text-sm md:text-base">
