@@ -42,7 +42,7 @@ export default function HistoryTable() {
   interface MethodSignatures {
     [key: string]: string;
   }
-  
+
   const knownMethods: MethodSignatures = {
     '0xa9059cbb': 'Transfer',
     '0x23b872dd': 'TransferFrom',
@@ -64,37 +64,37 @@ export default function HistoryTable() {
     '0x6a627842': 'Mint',
     '0xa0712d68': 'Mint',
   };
-  
+
   const getTransactionMethod = (input: string): string => {
     if (input === '0x') return 'Transfer';
-    
+
     const functionSelector = input.slice(0, 10).toLowerCase();
-    
+
     if (knownMethods[functionSelector]) {
       return knownMethods[functionSelector];
     }
-    
+
     return 'Swap';
   };
 
   // Function to get relative time
-const getRelativeTime = (timestamp: number) => {
-  const now = Date.now();
-  const diff = now - timestamp * 1000;
+  const getRelativeTime = (timestamp: number) => {
+    const now = Date.now();
+    const diff = now - timestamp * 1000;
 
-  // Ensure diff is not negative
-  if (diff < 0) return "Just now";
+    // Ensure diff is not negative
+    if (diff < 0) return "Just now";
 
-  const seconds = Math.floor(diff / 1000);
+    const seconds = Math.floor(diff / 1000);
 
-  if (seconds < 60) return `${seconds} secs ago`;
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes} mins ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours} hrs ago`;
-  const days = Math.floor(hours / 24);
-  return `${days} days ago`;
-};
+    if (seconds < 60) return `${seconds} secs ago`;
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes} mins ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours} hrs ago`;
+    const days = Math.floor(hours / 24);
+    return `${days} days ago`;
+  };
 
   // Function to truncate addresses
   const truncateAddress = (address: string) => {
@@ -105,20 +105,20 @@ const getRelativeTime = (timestamp: number) => {
   const fetchLatestTransactions = async () => {
     try {
       setIsLoading(true);
-      
+
       // First, get the latest block number
       const latestBlockResponse = await fetch(
         `https://api.etherscan.io/api?module=proxy&action=eth_blockNumber&apikey=${ETHERSCAN_API_KEY}`
       );
       const latestBlockData = await latestBlockResponse.json();
       const latestBlock = parseInt(latestBlockData.result, 16);
-  
+
       // Then get transactions from the latest blocks
       const response = await fetch(
         `https://api.etherscan.io/api?module=proxy&action=eth_getBlockByNumber&tag=latest&boolean=true&apikey=${ETHERSCAN_API_KEY}`
       );
       const data = await response.json();
-  
+
       if (data.result && data.result.transactions) {
         const formattedTransactions = await Promise.all(
           data.result.transactions.slice(0, 50).map(async (tx: any) => {
@@ -230,19 +230,19 @@ const getRelativeTime = (timestamp: number) => {
 
     // Convert to GMT+7
     const options: Intl.DateTimeFormatOptions = {
-        timeZone: 'Asia/Bangkok', // GMT+7 timezone
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: false // Use 24-hour format
+      timeZone: 'Asia/Bangkok', // GMT+7 timezone
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false // Use 24-hour format
     };
 
     // Format the date
     return date.toLocaleString('en-GB', options).replace(',', ''); // Remove comma for better CSV formatting
-};
+  };
 
   const handleMethodClick = (method: string) => {
     setSelectedMethod(method === selectedMethod ? null : method);
@@ -318,8 +318,8 @@ const getRelativeTime = (timestamp: number) => {
         </div>
 
 
-{/* Transaction table */}
-<div className="overflow-x-auto">
+        {/* Transaction table */}
+        <div className="overflow-x-auto">
           <Table className="w-full border rounded-2xl">
             <TableHeader>
               <TableRow className="bg-white">
@@ -369,11 +369,10 @@ const getRelativeTime = (timestamp: number) => {
                     <TableCell>
                       <button
                         onClick={() => handleMethodClick(tx.method)}
-                        className={`px-3 py-1 rounded-full text-base font-medium w-25 h-10 flex items-center justify-center ${
-                          selectedMethod === tx.method
+                        className={`px-3 py-1 rounded-full text-base font-medium w-25 h-10 flex items-center justify-center ${selectedMethod === tx.method
                             ? 'bg-purple-100 text-[#F5B069] border-2 border-[#F5B069]'
                             : 'bg-gray-100 text-gray-800 border border-gray-300'
-                        }`}
+                          }`}
                       >
                         {tx.method}
                       </button>
@@ -399,7 +398,7 @@ const getRelativeTime = (timestamp: number) => {
                     </TableCell>
                     <TableCell className="text-blue-600">
                       <div className="flex items-center space-x-2">
-                      <Link href={`/address/${tx.to}`}>
+                        <Link href={`/address/${tx.to}`}>
                           <span className="cursor-pointer hover:underline">
                             {truncateAddress(tx.to)}
                           </span>
@@ -501,7 +500,6 @@ const formatFee = (fee: string) => {
   const value = parseFloat(fee);
   return value.toFixed(6);
 };
-                      
 
 
-                        
+
