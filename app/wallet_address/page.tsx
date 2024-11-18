@@ -246,20 +246,20 @@ export default function TransactionExplorer() {
   const [isTokenHoldingsExpanded, setIsTokenHoldingsExpanded] = useState(false);
   const [walletAddress] = useState<string>(''); // State for wallet address
   const [error, setError] = useState<string | null>(null);
-  const [ setLoading] = useState<boolean>(false);
-  const [tokenAddress] = useState<string>('');
+  const [loading, setLoading] = useState<boolean>(false);
+  const [data, setData] = useState<any[]>([]); // State for storing token data
+  const [tokenAddress, setTokenAddress] = useState<string>('');
 
-  const [filterType, setFilterType] = useState("all");
-  const [addressType, setAddressType] = useState("all");
-  const [minAmount, setMinAmount] = useState("");
-  const [maxAmount, setMaxAmount] = useState("");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
-  const [searchAddress, setSearchAddress] = useState("");
+  const [filterType] = useState("all");
+  const [addressType] = useState("all");
+  const [minAmount] = useState("");
+  const [maxAmount] = useState("");
+  const [startDate] = useState("");
+  const [endDate] = useState("");
+  const [searchAddress] = useState("");
   const [analysisResults, setAnalysisResults] = useState<{ address: string; txCount: number; totalEth: number }[]>([]);
   const [processedAddresses, setProcessedAddresses] = useState<Set<string>>(new Set())
   const [tokenHoldings, setTokenHoldings] = useState<TokenHolding[]>([]); // Correctly define the state
-  const [multichainInfo, setMultichainInfo] = useState<string>('N/A'); // Initialize multichain info
 
 const ETHERSCAN_API_KEY = "RQ1E2Y5VTM4EKCNZTDHD58UCIXMPD34N1J"; 
 
@@ -271,8 +271,6 @@ const ETHERSCAN_API_KEY = "RQ1E2Y5VTM4EKCNZTDHD58UCIXMPD34N1J";
       fetchTransactionData(newAddress);
     }
   }, [searchParams]);
-
-  const [nameTag, setNameTag] = useState<string>(""); // State for user-defined tag
 
   const fetchTokenHoldings = async (address: string, token: string) => {
     setLoading(true);
