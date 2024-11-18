@@ -219,7 +219,7 @@ const forceSimulation = (nodes: Node[], edges: Edge[]) => {
 export default function TransactionExplorer() {
   const [nodes, setNodes] = useState<Node[]>([]);
   const [edges, setEdges] = useState<Edge[]>([]);
-  const [apiTransactions, setApiTransactions] = useState<ApiTransaction[]>([]);
+  const [apiTransactions] = useState<ApiTransaction[]>([]);
   const [addressInfo, setAddressInfo] = useState<AddressInfo>({
     address: "",           // Initialized as an empty string
     gas: "",               // Initialized as an empty string
@@ -234,12 +234,9 @@ export default function TransactionExplorer() {
     tokenHoldings: [] 
   });
   const [isLoading, setIsLoading] = useState(false);
-  const [currentAddress, setCurrentAddress] = useState<string>("");
-  const [searchedAddress, setSearchedAddress] = useState<string>("");
+  const [currentAddress] = useState<string>("");
+  const [searchedAddress] = useState<string>("");
   const [activeView, setActiveView] = useState<"transaction" | "graph">("graph");
-  const [showRightPanel, setShowRightPanel] = useState(activeView === "graph");
-
-  const [isOpen, setIsOpen] = useState(false);
   const [selectedEdge, setSelectedEdge] = useState<{ transactions: ApiTransaction[] } | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 4;
