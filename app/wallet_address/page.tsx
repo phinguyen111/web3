@@ -1,22 +1,26 @@
-
 'use client'
-
+import axios from 'axios'
 import React, { useCallback, useState, useEffect } from "react";
 import dynamic from "next/dynamic";
-import { ChevronDown, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { ChevronDown, Search, Copy, Eye, Download, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import {
   Background,
   Controls,
+  Node,
   Edge,
   NodeProps,
   EdgeProps,
-  Connection,
-  MarkerType,
-  useNodesState,
-  useEdgesState,
-  Position,
+  NodeChange,
+  EdgeChange,
+  OnNodesChange,
+  OnEdgesChange,
   Handle,
+  Position,
+  applyNodeChanges,
+  applyEdgeChanges,
   addEdge,
+  MarkerType,
+  Connection,
 } from "reactflow";
 import "reactflow/dist/style.css";
 import {
@@ -40,7 +44,6 @@ import { Button } from "@/components/ui/button";
 import { useSearchParams } from 'next/navigation';
 import HistoryTable from "@/components/HistoryTable";
 const ReactFlow = dynamic(() => import("reactflow").then((mod) => mod.default), { ssr: false });
-import Image from 'next/image';
 
 interface ApiTransaction {
   from: string;
@@ -53,9 +56,9 @@ interface ApiTransaction {
 }
 
 interface TokenHolding {
-  token_name: string;
-  token_symbol: string;
-  amount: string;
+  name: string;
+  symbol: string;
+  amount: number;
 }
 
 interface AddressInfo {
@@ -63,13 +66,14 @@ interface AddressInfo {
   gas: string;
   balance: string;
   totalSent: string;
-  totalReceived: string;
-  privateNameTag?: string;
-  firstSeen?: string;
-  lastSeen?: string;
-  fundedBy?: string;
-  multichainInfo?: string;
   value: string;
+  firstSeen: string;
+  lastSeen: string;
+  fundedBy: string;
+  privateNameTag: string; // User-defined tag
+  multichainInfo: string;
+  tokenHoldings: TokenHolding[]; // Token holdings
+  
 }
 
 const CircleNode = ({ data }: NodeProps) => (
@@ -111,7 +115,7 @@ const processTransactions = (transactions: ApiTransaction[], centralAddress: str
   const addedNodes = new Set<string>();
   const edgeAmounts = new Map<string, number>();
 
-  const radius = 500; // Adjust this value to change the size of the circle
+  const radius = 500;
   let angle = 0;
   const angleStep = (2 * Math.PI) / transactions.length;
 
@@ -126,6 +130,11 @@ const processTransactions = (transactions: ApiTransaction[], centralAddress: str
         y = Math.sin(angle) * radius;
         angle += angleStep;
       }
+    // Bảo vệ để tránh tạo node với nhãn không hợp lệ
+    if (!address || address.length < 6) {
+      console.warn("Invalid address passed to addNode:", address);
+      return; // Dừng nếu địa chỉ không hợp lệ
+    }
 
       newNodes.push({
         id: address,
@@ -137,7 +146,6 @@ const processTransactions = (transactions: ApiTransaction[], centralAddress: str
     }
   };
 
-  // Add central node first
   addNode(centralAddress.toLowerCase(), true);
 
   transactions.forEach((tx: ApiTransaction) => {
@@ -168,21 +176,19 @@ const processTransactions = (transactions: ApiTransaction[], centralAddress: str
 };
 
 const forceSimulation = (nodes: Node[], edges: Edge[]) => {
-  const REPULSION = 20000;  // Increased repulsion for greater spread
-  const ATTRACTION = 0.05;  // Attraction remains low to prevent nodes from pulling together
-  const ITERATIONS = 200;   // Increase iterations if needed for finer control
+  const REPULSION = 20000;
+  const ATTRACTION = 0.05;
+  const ITERATIONS = 200;
   const MAX_VELOCITY = 10;
 
   for (let iteration = 0; iteration < ITERATIONS; iteration++) {
-    // Calculate repulsive forces
     for (let i = 0; i < nodes.length; i++) {
       for (let j = i + 1; j < nodes.length; j++) {
         const dx = nodes[j].position.x - nodes[i].position.x;
         const dy = nodes[j].position.y - nodes[i].position.y;
         const distanceSq = dx * dx + dy * dy;
         if (distanceSq === 0) continue;
-
-        // Adjusted repulsion calculation (reduce strength of force for close nodes)
+        
         const force = REPULSION / Math.sqrt(distanceSq);
         const forceX = force * dx / distanceSq;
         const forceY = force * dy / distanceSq;
@@ -194,7 +200,6 @@ const forceSimulation = (nodes: Node[], edges: Edge[]) => {
       }
     }
 
-    // Calculate attractive forces
     edges.forEach(edge => {
       const source = nodes.find(n => n.id === edge.source);
       const target = nodes.find(n => n.id === edge.target);
@@ -202,8 +207,7 @@ const forceSimulation = (nodes: Node[], edges: Edge[]) => {
         const dx = target.position.x - source.position.x;
         const dy = target.position.y - source.position.y;
         const distance = Math.sqrt(dx * dx + dy * dy);
-
-        // Attraction with logarithmic decay (could experiment with different formulas)
+        
         const force = ATTRACTION * Math.log(distance + 1);
         const forceX = force * dx / distance;
         const forceY = force * dy / distance;
@@ -215,7 +219,6 @@ const forceSimulation = (nodes: Node[], edges: Edge[]) => {
       }
     });
 
-    // Limit maximum velocity
     nodes.forEach(node => {
       const velocity = Math.sqrt(node.position.x * node.position.x + node.position.y * node.position.y);
       if (velocity > MAX_VELOCITY) {
@@ -230,30 +233,41 @@ const forceSimulation = (nodes: Node[], edges: Edge[]) => {
 };
 
 export default function TransactionExplorer() {
-  const [nodes, setNodes, onNodesChange] = useNodesState([]);
-  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+  const [nodes, setNodes] = useState<Node[]>([]);
+  const [edges, setEdges] = useState<Edge[]>([]);
   const [apiTransactions, setApiTransactions] = useState<ApiTransaction[]>([]);
   const [addressInfo, setAddressInfo] = useState<AddressInfo>({
-    address: "",
-    gas: "",
-    balance: "",
-    totalSent: "",
-    totalReceived: "",
-    value: "",
+    address: "",           // Initialized as an empty string
+    gas: "",               // Initialized as an empty string
+    balance: "",           // Initialized as an empty string
+    totalSent: "",         // Initialized as an empty string
+    value: "",             // Initialized as an empty string
+    firstSeen: "",         // Initialized as an empty string
+    lastSeen: "",          // Initialized as an empty string
+    fundedBy: "",          // Initialized as an empty string
+    privateNameTag: "",    // Initialized as an empty string
+    multichainInfo: "",    // Initialized as an empty string
+    tokenHoldings: [] 
   });
-  const [tokenHoldings, setTokenHoldings] = useState<TokenHolding[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [currentAddress, setCurrentAddress] = useState<string>("");
-  const [searchedAddress, setSearchedAddress] = useState<string>(""); // Now used in handleExport
+  const [searchedAddress, setSearchedAddress] = useState<string>("");
   const [activeView, setActiveView] = useState<"transaction" | "graph">("graph");
   const [showRightPanel, setShowRightPanel] = useState(activeView === "graph");
-  const [selectedEdge, setSelectedEdge] = useState<ApiTransaction[] | null>(null);
+
+  const [isOpen, setIsOpen] = useState(false);
+  const [selectedEdge, setSelectedEdge] = useState<{ transactions: ApiTransaction[] } | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 4;
-  const [totalPages, setTotalPages] = useState(1);
+  const totalPages = selectedEdge ? Math.ceil(selectedEdge.transactions.length / itemsPerPage) : 1;
   const searchParams = useSearchParams();
+  const [address, setAddress] = useState<string | null>(null);
   const [isTokenHoldingsExpanded, setIsTokenHoldingsExpanded] = useState(false);
+  const [walletAddress, setWalletAddress] = useState<string>(''); // State for wallet address
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [data, setData] = useState<any[]>([]); // State for storing token data
+  const [tokenAddress, setTokenAddress] = useState<string>('');
 
   const [filterType, setFilterType] = useState("all");
   const [addressType, setAddressType] = useState("all");
@@ -263,93 +277,282 @@ export default function TransactionExplorer() {
   const [endDate, setEndDate] = useState("");
   const [searchAddress, setSearchAddress] = useState("");
   const [analysisResults, setAnalysisResults] = useState<{ address: string; txCount: number; totalEth: number }[]>([]);
+  const [processedAddresses, setProcessedAddresses] = useState<Set<string>>(new Set())
+  const [tokenHoldings, setTokenHoldings] = useState<TokenHolding[]>([]); // Correctly define the state
+  const [multichainInfo, setMultichainInfo] = useState<string>('N/A'); // Initialize multichain info
 
-  const fetchAddressInfo = useCallback(async (address: string) => {
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const response = await fetch(`/api/address/${address}`);
-      const data = await response.json();
-
-      if (data.success) {
-        setAddressInfo(data.data);
-        setTokenHoldings(data.data.tokenHoldings);
-      } else {
-        setError("Failed to fetch address information");
-      }
-    } catch (err) {
-      console.error('Error fetching address info:', err);
-      setError("An error occurred while fetching address information");
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  const fetchTransactionData = useCallback(async (address: string, updateSearched: boolean = false) => {
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const response = await fetch(`/api/transactions?address=${address}`);
-      const data = await response.json();
-
-      if (data.success) {
-        setApiTransactions(data.transactions);
-        setCurrentAddress(address.toLowerCase());
-        if (updateSearched) {
-          setSearchedAddress(address.toLowerCase());
-        }
-
-        const { nodes, edges } = processTransactions(data.transactions, address);
-        const simulatedLayout = forceSimulation(nodes, edges);
-        setNodes(simulatedLayout.nodes);
-        setEdges(simulatedLayout.edges);
-
-        const ITEMS_PER_PAGE = 10;
-        setTotalPages(Math.ceil(data.transactions.length / ITEMS_PER_PAGE));
-      } else {
-        setError("Failed to fetch transaction data");
-      }
-    } catch (err) {
-      console.error('Error fetching data:', err);
-      setError("An error occurred while fetching data");
-    } finally {
-      setIsLoading(false);
-    }
-  }, [setEdges, setNodes]);
+const ETHERSCAN_API_KEY = "RQ1E2Y5VTM4EKCNZTDHD58UCIXMPD34N1J"; 
 
   useEffect(() => {
     const newAddress = searchParams.get('address');
     if (newAddress) {
+      setAddress(newAddress);
       fetchAddressInfo(newAddress);
-      fetchTransactionData(newAddress, true); // Ensure searchedAddress is updated
+      fetchTransactionData(newAddress);
     }
-  }, [searchParams, fetchAddressInfo, fetchTransactionData]);
+  }, [searchParams]);
+
+  const [nameTag, setNameTag] = useState<string>(""); // State for user-defined tag
+
+  const fetchTokenHoldings = async (address: string, token: string) => {
+    setLoading(true);
+    setError(null);
+    try {
+        const response = await axios.get(`https://api.bscscan.com/api?module=account&action=tokenbalance&contractaddress=${token}&address=${address}&tag=latest&apikey=5IE2SF8P8J318KF81WMA1XKWC1XI4IQGU6`);
+        
+        const balance = response.data.result;
+        const tokenHoldingsData: TokenHolding[] = [{
+            name: "Token Name", // Placeholder for token name
+            symbol: "Token Symbol", // Placeholder for token symbol
+            amount: parseFloat(balance) / 1e18 // Adjust the divisor based on the token's decimals
+        }];
+
+        setTokenHoldings(tokenHoldingsData);
+    } catch (err) {
+        console.error('Error fetching token holdings:', err);
+        setError('Error fetching data');
+    } finally {
+        setLoading(false);
+    }
+};
+const fetchMultichainData = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+        const response = await axios.get(`https://deep-index.moralis.io/api/v2/${walletAddress}/erc20/${tokenAddress}`, {
+            headers: {
+                'X-API-Key': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJub25jZSI6IjdlYWZlZGFlLWQxYzktNGZiNS05OWJkLTRiNmU0ODMzMGM3YiIsIm9yZ0lkIjoiNDE2NTM4IiwidXNlcklkIjoiNDI4MTQ4IiwidHlwZSI6IlBST0pFQ1QiLCJ0eXBlSWQiOiI5MWE1M2YyZS00OGYxLTRiOTEtOTAyYy1kMTM3ZGFiOWQ0YTYiLCJpYXQiOjE3MzE4NzMzMDUsImV4cCI6NDg4NzYzMzMwNX0.eO0Dk38ZaLy-HgaUAYU-tou4ObTfdWQU9JBLMTQ_Dmo', 
+            },
+        });
+        setTokenHoldings(prev => [...prev, ...response.data]); // Combine with existing token holdings
+    } catch (err) {
+        console.error('Error fetching multichain data:', err);
+        setError('Error fetching data');
+    } finally {
+        setLoading(false);
+    }
+};
+const fetchAddressInfo = async (address: string) => {
+  setLoading(true);
+  setError(null);
+  try {
+      // Fetch balance
+      const balanceResponse = await fetch(`https://api.etherscan.io/api?module=account&action=balance&address=${address}&tag=latest&apikey=${ETHERSCAN_API_KEY}`);
+      const balanceData = await balanceResponse.json();
+      const balance = balanceData.result;
+
+      // Fetch transactions
+      const transactionResponse = await fetch(`https://api.etherscan.io/api?module=account&action=txlist&address=${address}&startblock=0&endblock=99999999&sort=asc&apikey=${ETHERSCAN_API_KEY}`);
+      const transactionData = await transactionResponse.json();
+      const transactions = transactionData.result;
+
+      // Fetch token transactions
+      const tokenResponse = await fetch(`https://api.etherscan.io/api?module=account&action=tokentx&address=${address}&startblock=0&endblock=999999 99999&sort=asc&apikey=${ETHERSCAN_API_KEY}`);
+      const tokenData = await tokenResponse.json();
+      const tokenTransactions = tokenData.result;
+
+      let totalSent = 0;
+      let fundedBy = 'N/A'; // Default value for funded by
+
+    
+
+      // Convert timestamps to human-readable format
+      const formatDate = (timestamp: string): string => {
+          const date = new Date(parseInt(timestamp) * 1000); // Convert seconds to milliseconds
+          return date.toLocaleString(); // Format date as string
+      };
+
+      const firstSeen = transactions.length > 0 ? formatDate(transactions[0].timeStamp) : 'N/A';
+      const lastSeen = transactions.length > 0 ? formatDate(transactions[transactions.length - 1].timeStamp) : 'N/A';
+
+      // Calculate token holdings
+      const tokenHoldings: { [key: string]: { name: string; symbol: string; amount: number } } = {};
+
+      tokenTransactions.forEach((tokenTx: any) => {
+          const tokenSymbol = tokenTx.tokenSymbol;
+          const tokenName = tokenTx.tokenName;
+          const value = parseFloat(tokenTx.value);
+
+          if (tokenTx.to.toLowerCase() === address.toLowerCase()) {
+              // Received tokens
+              if (!tokenHoldings[tokenSymbol]) {
+                  tokenHoldings[tokenSymbol] = { name: tokenName, symbol: tokenSymbol, amount: 0 }; // Use amount
+              }
+              tokenHoldings[tokenSymbol].amount += value; // Update amount
+          } else if (tokenTx.from.toLowerCase() === address.toLowerCase()) {
+              // Sent tokens
+              if (!tokenHoldings[tokenSymbol]) {
+                  tokenHoldings[tokenSymbol] = { name: tokenName, symbol: tokenSymbol, amount: 0 }; // Use amount
+              }
+              tokenHoldings[tokenSymbol].amount -= value; // Update amount
+          }
+      });
+
+      const tokenHoldingsArray: TokenHolding[] = Object.values(tokenHoldings);
+      setTokenHoldings(tokenHoldingsArray); 
+
+      setAddressInfo({
+          address,
+          gas: '0', // Placeholder
+          balance: (parseFloat(balance) / 1e18).toString(), // Convert Wei to Ether
+          totalSent: totalSent.toString(),
+          value: '0', // Placeholder for value in USD
+          firstSeen,
+          lastSeen,
+          fundedBy, // Set the fundedBy address
+          privateNameTag: 'N/A', // Use user-defined tag
+          multichainInfo: 'N/A', // Placeholder for multichain info
+          tokenHoldings: tokenHoldingsArray // Set the token holdings
+      });
+  } catch (error: unknown) {
+      if (error instanceof Error) {
+          console.error(`Error fetching address info for ${address}:`, error);
+          setError(error.message);
+      } else {
+          console.error(`Unexpected error fetching address info for ${address}:`, error);
+          setError("An unexpected error occurred.");
+      }
+  } finally {
+      setLoading(false);
+  }
+};
+
+  const fetchTransactionData = async (address: string, updateSearched: boolean = false, parentPosition: { x: number, y: number } = { x: 0, y: 0 }) => {
+    setIsLoading(true)
+    setError(null)
+
+    try {
+      const response = await fetch(`/api/transactions?address=${address}`)
+      const data = await response.json()
+
+      if (data.success) {
+        if (processedAddresses.has(address.toLowerCase())) {
+          return
+        }
+
+        const newFromNodes: Node[] = []
+        const newToNodes: Node[] = []
+        const newEdges: Edge[] = []
+        const addedFromNodes = new Set(nodes.map((node) => node.id))
+        const addedToNodes = new Set(nodes.map((node) => node.id))
+        const edgeMap = new Map()
+
+        // Add the center node if it's a new search
+        if (!processedAddresses.size) {
+          newFromNodes.push({
+            id: address.toLowerCase(),
+            type: 'star',
+            position: parentPosition,
+            data: { label: `${address.slice(0, 6)}...${address.slice(-4)}` }
+          })
+          addedFromNodes.add(address.toLowerCase())
+          addedToNodes.add(address.toLowerCase())
+        }
+
+        data.transactions.forEach((tx: any) => {
+          const txFrom = tx.from.toLowerCase()
+          const txTo = tx.to.toLowerCase()
+          const edgeId = `${txFrom}-${txTo}`
+
+          if (!addedFromNodes.has(txFrom) && txFrom !== txTo) {
+            newFromNodes.push({
+              id: txFrom,
+              type: txFrom === address.toLowerCase() ? "star" : "circle",
+              position: txFrom === address.toLowerCase() ? parentPosition : { x: parentPosition.x - 200, y: parentPosition.y + Math.random() * 500 },
+              data: { label: `${txFrom.slice(0, 6)}...${txFrom.slice(-4)}` }
+            })
+            addedFromNodes.add(txFrom)
+          }
+
+          if (!addedToNodes.has(txTo) && txFrom !== txTo) {
+            newToNodes.push({
+              id: txTo,
+              type: txTo === address.toLowerCase() ? "star" : "circle",
+              position: txTo === address.toLowerCase() ? parentPosition : { x: parentPosition.x + 200, y: parentPosition.y + Math.random() * 500 },
+              data: { label: `${txTo.slice(0, 6)}...${txTo.slice(-4)}` }
+            })
+            addedToNodes.add(txTo)
+          }
+
+
+          if (edgeMap.has(edgeId)) {
+            edgeMap.get(edgeId).totalAmount += tx.amount
+            edgeMap.get(edgeId).transactions.push(tx)
+          } else {
+            edgeMap.set(edgeId, {
+              source: txFrom,
+              target: txTo,
+              totalAmount: tx.amount,
+              transactions: [tx]
+            })
+          }
+        })
+
+        // Create edges from the map
+        edgeMap.forEach((edgeData, edgeId) => {
+          newEdges.push({
+            id: `e${edgeId}`,
+            source: edgeData.source,
+            target: edgeData.target,
+            type: 'custom',
+            data: { 
+              label: `${edgeData.totalAmount.toFixed(4)} ETH`,
+              transactions: edgeData.transactions //moi update
+            },
+            markerEnd: { type: MarkerType.ArrowClosed },
+            style: { stroke: '#60a5fa', strokeWidth: 3, curvature: 0.2 }
+          })
+        })
+
+        // Update processed addresses
+        setProcessedAddresses(prev => new Set([...prev, address.toLowerCase()]))
+
+        // Update nodes and edges
+        setNodes(prevNodes => [...prevNodes, ...newFromNodes, ...newToNodes])
+        setEdges(prevEdges => [...prevEdges, ...newEdges])
+      } else {
+        setError("Failed to fetch transaction data")
+      }
+    } catch (err) {
+      console.error('Error fetching data:', err)
+      setError('Failed to fetch transaction data')
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   const onNodeDoubleClick = useCallback((event: React.MouseEvent, node: Node) => {
-    fetchTransactionData(node.id, false);
-  }, [fetchTransactionData]);
+    if (!processedAddresses.has(node.id)) {
+      fetchTransactionData(node.id, false, node.position)
+    }
+  }, [processedAddresses])
 
   const onEdgeClick = useCallback((event: React.MouseEvent, edge: Edge) => {
-    const relatedTransactions = apiTransactions.filter(
-      (tx) => (tx.from === edge.source && tx.to === edge.target) || (tx.from === edge.target && tx.to === edge.source)
-    );
-
-    if (relatedTransactions.length > 0) {
-      setSelectedEdge(relatedTransactions);
+    const edgeTransactions = edge.data?.transactions || [];
+    if (edgeTransactions.length > 0) {
+      setSelectedEdge({ transactions: edgeTransactions });
     }
-  }, [apiTransactions]);
+  }, []);
 
-  const onConnect = useCallback(
-    (params: Connection) => setEdges((eds) => addEdge(params, eds)),
+  const onNodesChange: OnNodesChange = useCallback(
+    (changes: NodeChange[]) => setNodes((nds) => applyNodeChanges(changes, nds)),
+    [setNodes]
+  );
+
+  const onEdgesChange: OnEdgesChange = useCallback(
+    (changes: EdgeChange[]) => setEdges((eds) => applyEdgeChanges(changes, eds)),
     [setEdges]
   );
 
-  const handleViewChange = (view: "transaction" | "graph") => {
-    setActiveView(view);
-    setShowRightPanel(view === "graph");
-  };
+  const onConnect = useCallback(
+    (connection: Connection) => setEdges((eds) => addEdge(connection, eds)),
+    [setEdges]
+  );
+
+  // const handleViewChange = (view: "transaction" | "graph") => {
+  //   setActiveView(view);
+  //   setShowRightPanel(view === "graph");
+  // };
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text).then(() => {
@@ -359,36 +562,71 @@ export default function TransactionExplorer() {
     });
   };
 
+  const handleDownload = () => {
+    if (!apiTransactions.length) return;
+
+    const headers = ['Transaction Hash', 'Method', 'Block', 'Age', 'From', 'To', 'Amount', 'Fee'];
+    const csvContent = [
+      headers.join(','),
+      ...apiTransactions.map(tx => [
+        tx.hash || '',
+        'Transfer',
+        tx.block || '',
+        new Date(tx.timestamp * 1000).toLocaleString(),
+        tx.from,
+        tx.to,
+        `${tx.amount} ETH`,
+        tx.fee || '0'
+      ].join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `transactions_${searchedAddress}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const handleExport = () => {
-    if (selectedEdge && selectedEdge.length > 0) {
+    // Kiểm tra `currentTransactions` để đảm bảo nó có dữ liệu
+    if (currentTransactions && currentTransactions.length > 0) {
+      // Đặt tiêu đề cho CSV
       const headers = ['Time (UTC)', 'Hash', 'From', 'To', 'Amount', 'Fee'];
 
-      const rows = selectedEdge.map((transaction) => [
+      // Chuyển đổi mỗi giao dịch trong `currentTransactions` thành một hàng CSV
+      const rows = currentTransactions.map((transaction) => [
         transaction.timestamp ? new Date(transaction.timestamp * 1000).toLocaleString() : 'N/A',
-        transaction.hash ? transaction.hash : 'No data',
-        transaction.from ? transaction.from : 'No data',
-        transaction.to ? transaction.to : 'No data',
+        transaction.hash ? transaction.hash : 'Không có dữ liệu',
+        transaction.from ? transaction.from : 'Không có dữ liệu',
+        transaction.to ? transaction.to : 'Không có dữ liệu',
         transaction.amount ? transaction.amount : 'N/A',
         transaction.fee ? transaction.fee : 'N/A',
       ]);
 
+      // Kết hợp headers và rows thành một chuỗi CSV
       const csvContent = [headers, ...rows]
-        .map((row) => row.join(','))
-        .join('\n');
+        .map((row) => row.join(',')) // Nối mỗi hàng bằng dấu phẩy
+        .join('\n'); // Nối các hàng bằng dấu xuống dòng
 
+      // Tạo Blob từ nội dung CSV để tải xuống
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
 
+      // Tạo một link tạm để tải xuống
       const link = document.createElement('a');
       link.href = url;
-      link.download = `transaction_history_${searchedAddress || currentAddress}.csv`;
+      link.download = `transaction_history.csv`;
 
+      // Thêm link vào document, kích hoạt click để tải xuống, và sau đó xóa link
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+      URL.revokeObjectURL(url); // Giải phóng bộ nhớ
     } else {
-      alert('No data to download.');
+      alert('Không có dữ liệu để tải xuống.');
     }
   };
 
@@ -396,7 +634,7 @@ export default function TransactionExplorer() {
     let filteredTransactions = apiTransactions;
 
     if (filterType !== "all") {
-      filteredTransactions = filteredTransactions.filter(tx =>
+      filteredTransactions = filteredTransactions.filter(tx => 
         filterType === "in" ? tx.to === currentAddress : tx.from === currentAddress
       );
     }
@@ -421,11 +659,12 @@ export default function TransactionExplorer() {
       filteredTransactions = filteredTransactions.filter(tx => tx.timestamp <= endTimestamp);
     }
 
+    
     const { nodes, edges } = processTransactions(filteredTransactions, currentAddress);
     const simulatedLayout = forceSimulation(nodes, edges);
     setNodes(simulatedLayout.nodes);
     setEdges(simulatedLayout.edges);
-  }, [apiTransactions, filterType, addressType, minAmount, maxAmount, startDate, endDate, currentAddress, setNodes, setEdges]);
+  }, [apiTransactions, filterType, addressType, minAmount, maxAmount, startDate, endDate, currentAddress]);
 
   const updateAnalysis = useCallback(() => {
     const analysis = apiTransactions.reduce((acc, tx) => {
@@ -455,29 +694,22 @@ export default function TransactionExplorer() {
   // Calculate transactions to display
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const currentTransactions = selectedEdge ? selectedEdge.slice(startIndex, endIndex) : [];
+  const currentTransactions = selectedEdge ? selectedEdge.transactions.slice(startIndex, endIndex) : [];
 
   return (
     <>
-      {/* Header section with wallet address information */}
-      <div className="bg-primaryGray p-4 sm:p-6 text-white sm:px-8 lg:px-20 font-exo2">
+          {/* Header section with wallet address information */}
+          <div className="bg-primaryGray p-4 sm:p-6 text-white sm:px-8 lg:px-20 font-exo2">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-2 sm:space-y-0">
           <h1 className="text-xl sm:text-2xl font-semibold font-quantico">Address Information</h1>
-          <div className="flex items-center font-exo2">
-            <p className="text-xs sm:text-sm font-light mr-4">
-              Gas: <span className="font-bold">{addressInfo.gas} Gwei</span>
-            </p>
-          </div>
         </div>
 
         {/* Wallet overview section */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center mt-4 space-y-4 sm:space-y-0">
-          <Image
+          <img
             src="https://static.vecteezy.com/system/resources/previews/030/750/807/original/user-icon-in-trendy-outline-style-isolated-on-white-background-user-silhouette-symbol-for-your-website-design-logo-app-ui-illustration-eps10-free-vector.jpg"
             alt="User"
-            width={40}
-            height={40}
-            className="rounded-full mr-4"
+            className="rounded-full h-10 w-10 mr-4"
           />
           <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4 flex-grow font-exo2">
             <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-1 sm:space-y-0 sm:space-x-2">
@@ -489,7 +721,6 @@ export default function TransactionExplorer() {
                 <button
                   key={index}
                   className="text-white p-1 rounded-lg transition duration-200 ease-in-out hover:bg-gray-700"
-                  onClick={icon === 'copy' ? () => copyToClipboard(addressInfo.address) : undefined}
                 >
                 </button>
               ))}
@@ -498,15 +729,7 @@ export default function TransactionExplorer() {
           {/* Main content area with transaction graph and table */}
         </div>
         {/* Main content area */}
-        <div className="flex flex-wrap items-center mt-4 space-x-2 space-y-2">
-          {['<public name tag>', '<public name tag> <coin name>', '# <public name tag>'].map((text, index) => (
-            <button
-              key={index}
-              className="bg-[#7F7C79] text-white font-bold py-1 px-2 text-[10px] rounded-lg shadow-sm transition duration-200 ease-in-out hover:bg-[#666] hover:text-[#fff] flex items-center"
-            >
-            </button>
-          ))}
-        </div>
+       
       </div>
       <div className={` bg-[#1C2128] text-white font-exo2`}>
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -524,14 +747,9 @@ export default function TransactionExplorer() {
                 </div>
                 <div>
                   <p className="text-gray-600 font-bold">Value:</p>
-                  <p>{addressInfo.totalReceived} ETH</p>
-                </div>
-                <div>
-                  <p className="text-gray-600 font-bold">Total Received:</p>
                   <p>${addressInfo.value} USD</p>
                 </div>
-              </div>
-              <div>
+                <div>
                 <p className="text-muted-foreground mb-2 font-semibold">TOKEN HOLDINGS:</p>
                 <Button
                   variant="outline"
@@ -544,8 +762,9 @@ export default function TransactionExplorer() {
                       : "No tokens found"}
                   </span>
                   <ChevronDown
-                    className={`h-4 w-4 transition-transform duration-200 ${isTokenHoldingsExpanded ? "rotate-180" : ""
-                      }`}
+                    className={`h-4 w-4 transition-transform duration-200 ${
+                      isTokenHoldingsExpanded ? "rotate-180" : ""
+                    }`}
                   />
                 </Button>
 
@@ -556,7 +775,7 @@ export default function TransactionExplorer() {
                         {tokenHoldings.map((token, index) => (
                           <li key={index}>
                             <p className="font-semibold">
-                              {token.token_name} ({token.token_symbol})
+                              {token.name} ({token.symbol})
                             </p>
                             <p>{token.amount}</p>
                           </li>
@@ -567,6 +786,7 @@ export default function TransactionExplorer() {
                     )}
                   </div>
                 )}
+              </div>
               </div>
             </div>
 
@@ -580,29 +800,29 @@ export default function TransactionExplorer() {
                     Private name tag:
                   </span>
                   <span className="bg-[#F5B056] text-gray-800 px-3 py-1 rounded-md">
-                    {addressInfo.privateNameTag || "N/A"}
+                  {addressInfo.privateNameTag || "N/A"}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600 font-bold">First seen:</span>
                   <span>{addressInfo.firstSeen || "N/A"}</span>
-                </div>
+                  </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600 font-bold">Last seen:</span>
                   <span>{addressInfo.lastSeen || "N/A"}</span>
-                </div>
-                <div>
-                  <p className="text-gray-600 mb-1 font-bold">Funded by:</p>
-                  <a href="#" className="text-blue-500 hover:underline">
-                    {addressInfo.fundedBy || "N/A"}
-                  </a>
-                </div>
+                  </div>
+                  <div>
+      <p className="text-gray-600 mb-1 font-bold">Funded by:</p>
+      <a href="#" className="text-blue-500 hover:underline">
+        {addressInfo.fundedBy || "N/A"}
+      </a>
+    </div>
                 <div>
                   <p className="text-gray-600 mb-1 font-bold">
                     Multichain info:
                   </p>
                   <span className="bg-[#F5B056] text-gray-800 px-3 py-1 rounded-md inline-block">
-                    {addressInfo.multichainInfo || "N/A"}
+                  {addressInfo.multichainInfo || "N/A"}
                   </span>
                 </div>
               </div>
@@ -610,31 +830,34 @@ export default function TransactionExplorer() {
           </div>
         </main>
       </div>
-
+      
+      
       {/* Transaction graph and history buttons */}
       <div className="flex justify-between items-center w-full bg-[#1a2b4b] p-4 border-b border-blue-700">
         <div className="flex space-x-2">
-          <Button
-            onClick={() => handleViewChange("transaction")}
-            className={`font-bold py-2 px-4 rounded-t-lg transition duration-200 ease-in-out ${activeView === "transaction"
-              ? "bg-white text-[#1a2b4b]"
-              : "bg-transparent text-white hover:bg-blue-600"
-              }`}
+          <Button 
+            onClick={() => setActiveView("transaction")}
+            className={`font-bold py-2 px-4 rounded-t-lg transition duration-200 ease-in-out ${
+              activeView === "transaction" 
+                ? "bg-white text-[#1a2b4b]" 
+                : "bg-transparent text-white hover:bg-blue-600"
+            }`}
           >
             Transaction history
           </Button>
-          <Button
-            onClick={() => handleViewChange("graph")}
-            className={`font-bold py-2 px-4 rounded-t-lg transition duration-200 ease-in-out ${activeView === "graph"
-              ? "bg-white text-[#1a2b4b]"
-              : "bg-transparent text-white hover:bg-blue-600"
-              }`}
+          <Button 
+            onClick={() => setActiveView("graph")}
+            className={`font-bold py-2 px-4 rounded-t-lg transition duration-200 ease-in-out ${
+              activeView === "graph" 
+                ? "bg-white text-[#1a2b4b]" 
+                : "bg-transparent text-white hover:bg-blue-600"
+            }`}
           >
             Transaction Graph
           </Button>
         </div>
       </div>
-
+ 
       {/* Main content area with transaction graph and table */}
       <div className="w-full h-full flex flex-col relative z-10 font-exo2 mb-8">
         {isLoading && (
@@ -649,15 +872,15 @@ export default function TransactionExplorer() {
             <span className="block sm:inline"> {error}</span>
           </div>
         )}
-
+        
         <div className="flex bg-[#1C2128] px-2 py-4 border-b border-b-white">
           {/* Add header content if needed */}
         </div>
-        <div className="flex-grow flex">
+        <div className="flex-grow">
           {activeView === "transaction" ? (
-            <HistoryTable />
+            <HistoryTable address={address || ""} />
           ) : (
-            <div className="flex-grow flex">
+          <div className="flex-grow flex">
               {activeView === "graph" && (
                 <div className="w-full h-[600px] border border-gray-300">
                   <ReactFlow
@@ -671,116 +894,12 @@ export default function TransactionExplorer() {
                     nodeTypes={nodeTypes}
                     edgeTypes={edgeTypes}
                     fitView
-                    minZoom={0.1}
-                    maxZoom={1.5}
                   >
                     <Controls />
-                    <Background />
                   </ReactFlow>
                 </div>
               )}
-              {showRightPanel && (
-                <div className="w-full lg:w-full xl:w-1/3 h-full overflow-hidden">
-                  <div className="h-full overflow-y-auto p-2 sm:p-4 space-y-4 bg-gray-800 bg-opacity-90">
-                    <Card className="bg-gray-800 border-gray-700">
-                      <CardHeader>
-                        <CardTitle className="text-white">Filter</CardTitle>
-                      </CardHeader>
-                      <CardContent className="space-y-2">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                          <Select value={filterType} onValueChange={setFilterType}>
-                            <SelectTrigger className="bg-gray-700 text-white border-gray-600">
-                              <SelectValue placeholder="All txs" />
-                            </SelectTrigger>
-                            <SelectContent className="bg-gray-700 text-white border-gray-600">
-                              <SelectItem value="all">All txs</SelectItem>
-                              <SelectItem value="in">Incoming</SelectItem>
-                              <SelectItem value="out">Outgoing</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <Select value={addressType} onValueChange={setAddressType}>
-                            <SelectTrigger className="bg-gray-700 text-white border-gray-600">
-                              <SelectValue placeholder="All addresses" />
-                            </SelectTrigger>
-                            <SelectContent className="bg-gray-700 text-white border-gray-600">
-                              <SelectItem value="all">All addresses</SelectItem>
-                              <SelectItem value="known">Known addresses</SelectItem>
-                              <SelectItem value="unknown">Unknown addresses</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                          <Input
-                            placeholder="Minimum"
-                            value={minAmount}
-                            onChange={(e) => setMinAmount(e.target.value)}
-                            className="bg-gray-700 text-white border-gray-600"
-                          />
-                          <Input
-                            placeholder="Maximum"
-                            value={maxAmount}
-                            onChange={(e) => setMaxAmount(e.target.value)}
-                            className="bg-gray-700 text-white border-gray-600"
-                          />
-                        </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                          <Input
-                            type="date"
-                            value={startDate}
-                            onChange={(e) => setStartDate(e.target.value)}
-                            className="bg-gray-700 text-white border-gray-600"
-                          />
-                          <Input
-                            type="date"
-                            value={endDate}
-                            onChange={(e) => setEndDate(e.target.value)}
-                            className="bg-gray-700 text-white border-gray-600"
-                          />
-                        </div>
-                        <Button onClick={applyFilters} className="w-full bg-blue-600 hover:bg-blue-700 text-white">
-                          Apply Filters
-                        </Button>
-                      </CardContent>
-                    </Card>
-
-                    <Card className="bg-gray-800 border-gray-700">
-                      <CardHeader>
-                        <CardTitle className="text-white">Analysis</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="mb-4">
-                          <Input
-                            placeholder="Search by address/label"
-                            value={searchAddress}
-                            onChange={(e) => setSearchAddress(e.target.value)}
-                            className="bg-gray-700 text-white border-gray-600"
-                          />
-                        </div>
-                        <div className="overflow-x-auto">
-                          <Table>
-                            <TableHeader>
-                              <TableRow className="border-gray-700">
-                                <TableHead className="text-gray-400">Sender</TableHead>
-                                <TableHead className="text-gray-400">Txn</TableHead>
-                                <TableHead className="text-gray-400">Eth</TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {analysisResults.map((item, i) => (
-                                <TableRow key={i} className="border-gray-700">
-                                  <TableCell className="text-gray-300">{item.address}</TableCell>
-                                  <TableCell className="text-gray-300">{item.txCount}</TableCell>
-                                  <TableCell className="text-gray-300">{item.totalEth.toFixed(4)}</TableCell>
-                                </TableRow>
-                              ))}
-                            </TableBody>
-                          </Table>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-                </div>
-              )}
+              
             </div>
           )}
         </div>
