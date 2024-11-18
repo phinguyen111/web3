@@ -2,9 +2,8 @@
 import axios from 'axios'
 import React, { useCallback, useState, useEffect } from "react";
 import dynamic from "next/dynamic";
-import { ChevronDown, Search, Copy, Eye, Download, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { ChevronDown, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import {
-  Background,
   Controls,
   Node,
   Edge,
@@ -23,23 +22,7 @@ import {
   Connection,
 } from "reactflow";
 import "reactflow/dist/style.css";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+
 import { Button } from "@/components/ui/button";
 import { useSearchParams } from 'next/navigation';
 import HistoryTable from "@/components/HistoryTable";
