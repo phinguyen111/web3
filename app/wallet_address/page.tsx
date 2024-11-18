@@ -244,11 +244,10 @@ export default function TransactionExplorer() {
   const searchParams = useSearchParams();
   const [address, setAddress] = useState<string | null>(null);
   const [isTokenHoldingsExpanded, setIsTokenHoldingsExpanded] = useState(false);
-  const [walletAddress, setWalletAddress] = useState<string>(''); // State for wallet address
+  const [walletAddress] = useState<string>(''); // State for wallet address
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [data, setData] = useState<any[]>([]); // State for storing token data
-  const [tokenAddress, setTokenAddress] = useState<string>('');
+  const [ setLoading] = useState<boolean>(false);
+  const [tokenAddress] = useState<string>('');
 
   const [filterType, setFilterType] = useState("all");
   const [addressType, setAddressType] = useState("all");
